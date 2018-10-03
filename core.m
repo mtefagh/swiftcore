@@ -1,4 +1,5 @@
 function [blocked, coreInd] = core(S, rev, blocked, coreInd, c, solver, epsilon)
+%% the currently available options for the LP solver are 'gurobi' and 'linprog'
     [m, n] = size(S);
     denseSet = zeros(n, 1);
     denseSet(blocked == 1) = normrnd(0, c, [sum(blocked), 1]);
@@ -7,7 +8,7 @@ function [blocked, coreInd] = core(S, rev, blocked, coreInd, c, solver, epsilon)
     k = sum(sparseSet);
     model.obj = [denseSet; ones(k, 1)];
     temp = speye(n);
-    model.A = [S, sparse(m,k); temp(sparseSet == 1, :), speye(k); -temp(sparseSet == 1, :), speye(k)];
+    model.A = [S,sparse(m,k); temp(sparseSet==1,:),speye(k); -temp(sparseSet==1,:),speye(k)];
     model.sense = repmat('=', m+2*k, 1);
     model.sense(m+1:m+2*k) = '>';
     model.rhs = zeros(m+2*k, 1);
