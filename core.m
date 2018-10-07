@@ -1,22 +1,21 @@
-function [blocked, coreInd] = core(S, rev, blocked, coreInd, c, solver, epsilon)
+function flux = core(S, rev, blocked, weights, solver)
 %% the currently available options for the LP solver are 'gurobi' and 'linprog'
     [m, n] = size(S);
-    denseSet = zeros(n, 1);
-    denseSet(blocked == 1) = normrnd(0, c, [sum(blocked), 1]);
-    sparseSet = ones(n, 1);
-    sparseSet(coreInd) = 0;
-    k = sum(sparseSet);
-    model.obj = [denseSet; ones(k, 1)];
+    dense = zeros(n, 1);
+    dense(blocked == 1) = normrnd(0, 1, [sum(blocked), 1]);
+    coreInd = weights == 0;
+    k = n - sum(coreInd);
+    model.obj = [dense; weights(coreInd == 0)];
     temp = speye(n);
-    model.A = [S,sparse(m,k); temp(sparseSet==1,:),speye(k); -temp(sparseSet==1,:),speye(k)];
+    model.A = [S,sparse(m,k); temp(coreInd==0,:),speye(k); -temp(coreInd==0,:),speye(k)];
     model.sense = repmat('=', m+2*k, 1);
     model.sense(m+1:m+2*k) = '>';
     model.rhs = zeros(m+2*k, 1);
     model.lb = -Inf(n, 1);
     model.lb(blocked == 1) = -1;
     model.lb(rev == 0) = 0;
-    if  c == 0
-        model.lb(sparseSet + rev == 0) = 1;
+    if ~any(blocked)
+        model.lb(coreInd ~= 0 & rev == 0) = 1;
     end
     model.lb = [model.lb; -Inf(k, 1)];
     model.ub = Inf(n, 1);
@@ -26,9 +25,7 @@ function [blocked, coreInd] = core(S, rev, blocked, coreInd, c, solver, epsilon)
         params.outputflag = 0;
         result = gurobi(model, params);
         if strcmp(result.status, 'OPTIMAL')
-            index = abs(result.x(1:n)) > epsilon;
-            blocked(index) = 0;
-            coreInd = max(coreInd, index);
+            flux = result.x(1:n);
         else
             warning('Optimization was stopped with status %s\n', result.status);
         end
@@ -44,9 +41,7 @@ function [blocked, coreInd] = core(S, rev, blocked, coreInd, c, solver, epsilon)
         problem.options = optimset('Display', 'off');
         [result.x, result.objval, result.status, ~] = linprog(problem);
         if result.status == 1
-            index = abs(result.x(1:n)) > epsilon;
-            blocked(index) = 0;
-            coreInd = max(coreInd, index);
+            flux = result.x(1:n);
         else
             warning('Optimization was stopped with status %s\n', result.status);
         end
@@ -62,9 +57,7 @@ function [blocked, coreInd] = core(S, rev, blocked, coreInd, c, solver, epsilon)
         result.objval = solution.obj;
         result.status = solution.stat;
         if result.status == 1
-            index = abs(result.x(1:n)) > epsilon;
-            blocked(index) = 0;
-            coreInd = max(coreInd, index);
+            flux = result.x(1:n);
         else
             warning('Optimization was stopped with status %s\n', result.status);
         end

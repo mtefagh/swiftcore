@@ -1,10 +1,11 @@
-function reconstruction = swiftCore(S, rev, coreInd, varargin)
+function reconstruction = swiftcore(S, rev, coreInd, weights, varargin)
 %% Usage
-%  reconstruction = swiftCore(S, rev, coreInd [, solver])
+%  reconstruction = swiftcore(S, rev, coreInd, weights [, solver])
 %   * Inputs:
 %   - S: the associated sparse stoichiometric matrix
 %   - rev: the 0-1 vector with 1's corresponding to the reversible reactions
 %   - coreInd: the set of indices corresponding to the core reactions
+%   - weights: weight vector for the penalties associated with each reaction
 %   - solver: the LP solver to be used; the currently available options are
 %   either 'gurobi' or 'linprog' with the default value of 'linprog'
 %   * Outputs:
@@ -44,6 +45,8 @@ function reconstruction = swiftCore(S, rev, coreInd, varargin)
                     S = S(any(S, 2), :);
                     fullCouplings(fullCouplings == reacNum(nzcols(2))) = reacNum(nzcols(1));
                     coreInd(coreInd == reacNum(nzcols(2))) = reacNum(nzcols(1));
+                    weights(nzcols(1)) = weights(nzcols(1)) + weights(nzcols(2));
+                    weights(nzcols(2)) = [];
                     reacNum(nzcols(2)) = [];
                     flag = true;
                 end
@@ -52,38 +55,34 @@ function reconstruction = swiftCore(S, rev, coreInd, varargin)
     end
     S(:, rev == -1) = -S(:, rev == -1);
     rev(rev == -1) = 0;
-    %% iterating the algorithm until the size of the subnetwork is no longer reduced by more than half
-    originalCoreInd = ismember(reacNum, coreInd);
-    coreInd = true(size(S, 2), 1);
-    while true
-        performance = sum(coreInd);
-        coreInd = originalCoreInd;
-        % the zero-tolerance parameter is the smallest flux value that is considered nonzero
-        tol = norm(S(:, coreInd), 'fro')*eps(class(S));
-        % identifying the blocked reversible reactions
-        blocked = zeros(size(S, 2), 1);
-        [Q, R, ~] = qr(transpose(S(:, coreInd)));
-        Z = Q(:, sum(abs(diag(R)) > tol)+1:end);
-        blocked(coreInd) = vecnorm(Z, 2, 2) < tol;
-        % phase one of unblocking the reversible reactions
-        c = 1;
-        while any(blocked)
-            % incrementing the core set until no reversible blocked reaction remains
-            blockedSize = sum(blocked);
-            [blocked, coreInd] = core(S, rev, blocked, coreInd, c, solver, tol);
-            if 2*sum(blocked) > blockedSize
-                c = 2*c;
-            end
-        end
-        % phase two of unblocking the irreversible reactions
-        [~, coreInd] = core(S, rev, blocked, coreInd, 0, solver, tol);
-        S = S(:, coreInd);
-        rev = rev(coreInd);
-        originalCoreInd = originalCoreInd(coreInd);
-        reacNum = reacNum(coreInd);
-        if 2*sum(coreInd) > performance
-            break;
+    %% the main algorithm 
+    coreInd = ismember(reacNum, coreInd);
+    % the zero-tolerance parameter is the smallest flux value that is considered nonzero
+    tol = norm(S(:, coreInd), 'fro')*eps(class(S));
+    % identifying the blocked reversible reactions
+    blocked = zeros(size(S, 2), 1);
+    [Q, R, ~] = qr(transpose(S(:, coreInd)));
+    Z = Q(:, sum(abs(diag(R)) > tol)+1:end);
+    blocked(coreInd) = vecnorm(Z, 2, 2) < tol;
+    % phase one of unblocking the reversible reactions
+    weights(coreInd) = 0;
+    c = weights;
+    while any(blocked)
+        % incrementing the core set until no reversible blocked reaction remains
+        blockedSize = sum(blocked);
+        flux = core(S, rev, blocked, c, solver);
+        index = abs(flux) > tol;
+        c(index) = 0;
+        blocked(index) = 0;
+        rev(index & coreInd) = 0;
+        S(:, flux < -tol & coreInd) = -S(:, flux < -tol & coreInd);
+        % halve the weights if the number of the blocked reactions is no longer reduced by more than half
+        if 2*sum(blocked) > blockedSize
+            c = c/2;
         end
     end
-    reconstruction = ismember(fullCouplings, reacNum);
+    % phase two of unblocking the irreversible reactions
+    flux = core(S, rev, blocked, weights, solver);
+    coreInd = max(coreInd, abs(flux) > tol);
+    reconstruction = ismember(fullCouplings, reacNum(coreInd));
 end
