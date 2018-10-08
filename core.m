@@ -3,24 +3,27 @@ function flux = core(S, rev, blocked, weights, solver)
     [m, n] = size(S);
     dense = zeros(n, 1);
     dense(blocked == 1) = normrnd(0, 1, [sum(blocked), 1]);
-    coreInd = weights == 0;
-    k = n - sum(coreInd);
-    model.obj = [dense; weights(coreInd == 0)];
-    temp = speye(n);
-    model.A = [S,sparse(m,k); temp(coreInd==0,:),speye(k); -temp(coreInd==0,:),speye(k)];
-    model.sense = repmat('=', m+2*k, 1);
-    model.sense(m+1:m+2*k) = '>';
-    model.rhs = zeros(m+2*k, 1);
+    k = sum(weights ~= 0 & rev == 1);
+    l = sum(weights ~= 0 & rev == 0);
+    model.obj = [dense; weights(weights~=0&rev==1); weights(weights~=0&rev==0)];
+    temp1 = speye(n);
+    temp2 = speye(k+l);
+    model.A = [S, sparse(m,k+l); ...
+        temp1(weights~=0 & rev==1, :), temp2(rev(weights~=0)==1, :); ...
+        -temp1(weights~=0,:), temp2];
+    model.sense = repmat('=', m+2*k+l, 1);
+    model.sense(m+1:m+2*k+l) = '>';
+    model.rhs = zeros(m+2*k+l, 1);
     model.lb = -Inf(n, 1);
     model.lb(blocked == 1) = -1;
     model.lb(rev == 0) = 0;
     if ~any(blocked)
-        model.lb(coreInd ~= 0 & rev == 0) = 1;
+        model.lb(weights == 0 & rev == 0) = 1;
     end
-    model.lb = [model.lb; -Inf(k, 1)];
+    model.lb = [model.lb; -Inf(k+l, 1)];
     model.ub = Inf(n, 1);
     model.ub(blocked == 1) = 1;
-    model.ub = [model.ub; Inf(k, 1)];
+    model.ub = [model.ub; Inf(k+l, 1)];
     if strcmp(solver, 'gurobi')
         params.outputflag = 0;
         result = gurobi(model, params);

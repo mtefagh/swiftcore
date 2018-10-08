@@ -76,7 +76,7 @@ function reconstruction = swiftcore(S, rev, coreInd, weights, varargin)
         blocked(index) = 0;
         rev(index & coreInd) = 0;
         S(:, flux < -tol & coreInd) = -S(:, flux < -tol & coreInd);
-        % halve the weights if the number of the blocked reactions is no longer reduced by more than half
+        % adjust the weights if the number of the blocked reactions is no longer reduced by more than half
         if 2*sum(blocked) > blockedSize
             c = c/2;
         end
