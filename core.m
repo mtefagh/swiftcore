@@ -16,7 +16,7 @@ function flux = core(S, rev, blocked, weights, solver)
     model.rhs = zeros(m+2*k+l, 1);
     model.lb = -Inf(n, 1);
     model.lb(blocked == 1) = -1;
-    model.lb(rev == 0) = 0;
+    model.lb(weights ~= 0 & rev == 0) = 0;
     if ~any(blocked)
         model.lb(weights == 0 & rev == 0) = 1;
     end

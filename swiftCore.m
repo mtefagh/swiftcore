@@ -56,33 +56,28 @@ function reconstruction = swiftcore(S, rev, coreInd, weights, varargin)
     S(:, rev == -1) = -S(:, rev == -1);
     rev(rev == -1) = 0;
     %% the main algorithm 
-    coreInd = ismember(reacNum, coreInd);
+    weights(ismember(reacNum, coreInd)) = 0;
     % the zero-tolerance parameter is the smallest flux value that is considered nonzero
-    tol = norm(S(:, coreInd), 'fro')*eps(class(S));
+    tol = norm(S, 'fro')*eps(class(S));
+    % phase one of unblocking the irreversible reactions
+    blocked = zeros(length(weights), 1);
+    flux = core(S, rev, blocked, weights, solver);
+    weights(abs(flux) > tol) = 0;
     % identifying the blocked reversible reactions
-    blocked = zeros(size(S, 2), 1);
-    [Q, R, ~] = qr(transpose(S(:, coreInd)));
+    [Q, R, ~] = qr(transpose(S(:, weights == 0)));
     Z = Q(:, sum(abs(diag(R)) > tol)+1:end);
-    blocked(coreInd) = vecnorm(Z, 2, 2) < tol;
-    % phase one of unblocking the reversible reactions
-    weights(coreInd) = 0;
-    c = weights;
+    blocked(weights == 0) = vecnorm(Z, 2, 2) < tol;
+    % phase two of unblocking the reversible reactions
     while any(blocked)
         % incrementing the core set until no reversible blocked reaction remains
         blockedSize = sum(blocked);
-        flux = core(S, rev, blocked, c, solver);
-        index = abs(flux) > tol;
-        c(index) = 0;
-        blocked(index) = 0;
-        rev(index & coreInd) = 0;
-        S(:, flux < -tol & coreInd) = -S(:, flux < -tol & coreInd);
+        flux = core(S, rev, blocked, weights, solver);
+        weights(abs(flux) > tol) = 0;
+        blocked(abs(flux) > tol) = 0;
         % adjust the weights if the number of the blocked reactions is no longer reduced by more than half
         if 2*sum(blocked) > blockedSize
-            c = c/2;
+            weights = weights/2;
         end
     end
-    % phase two of unblocking the irreversible reactions
-    flux = core(S, rev, blocked, weights, solver);
-    coreInd = max(coreInd, abs(flux) > tol);
-    reconstruction = ismember(fullCouplings, reacNum(coreInd));
+    reconstruction = ismember(fullCouplings, reacNum(weights == 0));
 end
