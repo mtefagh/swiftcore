@@ -46,7 +46,7 @@ function flux = core(S, rev, blocked, weights, solver)
         if result.status == 1
             flux = result.x(1:n);
         else
-            warning('Optimization was stopped with status %s\n', result.status);
+            warning('Optimization was stopped with status %d\n', result.status);
         end
     elseif strcmp(solver, 'cplex')
         problem.f = model.obj;
@@ -60,7 +60,7 @@ function flux = core(S, rev, blocked, weights, solver)
         if result.status == 1
             flux = result.x(1:n);
         else
-            warning('Optimization was stopped with status %s\n', result.status);
+            warning('Optimization was stopped with status %d\n', result.status);
         end
     else
         model.b = model.rhs;
@@ -76,7 +76,7 @@ function flux = core(S, rev, blocked, weights, solver)
         if result.status == 1
             flux = result.x(1:n);
         else
-            warning('Optimization was stopped with status %s\n', result.status);
+            warning('Optimization was stopped with status %d\n', result.status);
         end
     end
 end

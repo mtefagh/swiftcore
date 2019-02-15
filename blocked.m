@@ -31,7 +31,7 @@ function result = blocked(S, rev, solver)
         [result.x, result.objval, result.status, ~] = linprog(problem);
         if result.status ~= 1
             warning('Optimization is unstable!');
-            fprintf('Optimization returned status: %s\n', result.status);
+            fprintf('Optimization returned status: %d\n', result.status);
         end
     elseif strcmp(solver, 'cplex')
         problem.f = model.obj;
@@ -44,7 +44,7 @@ function result = blocked(S, rev, solver)
         [result.x, result.objval, result.status] = cplexlp(problem);
         if result.status ~= 1
             warning('Optimization is unstable!');
-            fprintf('Optimization returned status: %s\n', result.status);
+            fprintf('Optimization returned status: %d\n', result.status);
         end
     else
         model.b = model.rhs;
@@ -59,7 +59,7 @@ function result = blocked(S, rev, solver)
         result.status = solution.stat;
         if result.status ~= 1
             warning('Optimization is unstable!');
-            fprintf('Optimization returned status: %s\n', result.status);
+            fprintf('Optimization returned status: %d\n', result.status);
         end
     end
 end
