@@ -1,4 +1,4 @@
-function [reconstruction, LP] = swiftcore(S, rev, coreInd, weights, reduction, varargin)
+function [reconstruction, LP, time_preprocess, time_QR, time_loop] = swiftcore(S, rev, coreInd, weights, reduction, varargin)
 %% Usage
 %  reconstruction = swiftcore(S, rev, coreInd, weights, reduction [, solver])
 %   * Inputs:
@@ -12,6 +12,7 @@ function [reconstruction, LP] = swiftcore(S, rev, coreInd, weights, reduction, v
 %   * Outputs:
 %   - reconstruction: the 0-1 indicator vector of the reactions constituting 
 %   the consistent metabolic network reconstructed from the core reactions
+    tic;
     %% setting up the LP solver
     if ~isempty(varargin)
         solver = varargin{1};
@@ -55,7 +56,9 @@ function [reconstruction, LP] = swiftcore(S, rev, coreInd, weights, reduction, v
     end
     S(:, rev == -1) = -S(:, rev == -1);
     rev(rev == -1) = 0;
-    %% the main algorithm 
+    time_preprocess = toc;
+    %% the main algorithm
+    tic;
     weights(ismember(reacNum, coreInd)) = 0;
     % the zero-tolerance parameter is the smallest flux value that is considered nonzero
     tol = norm(S, 'fro')*eps(class(S));
@@ -68,7 +71,9 @@ function [reconstruction, LP] = swiftcore(S, rev, coreInd, weights, reduction, v
     [Q, R, ~] = qr(transpose(S(:, weights == 0)));
     Z = Q(:, sum(abs(diag(R)) > tol)+1:end);
     blocked(weights == 0) = vecnorm(Z, 2, 2) < tol;
+    time_QR = toc;
     % phase two of unblocking the reversible reactions
+    tic;
     while any(blocked)
         % incrementing the core set until no reversible blocked reaction remains
         blockedSize = sum(blocked);
@@ -82,4 +87,5 @@ function [reconstruction, LP] = swiftcore(S, rev, coreInd, weights, reduction, v
         end
     end
     reconstruction = ismember(fullCouplings, reacNum(weights == 0));
+    time_loop = toc;
 end
