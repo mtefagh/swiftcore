@@ -2,13 +2,14 @@
 *swiftcore* is a tool for the context-specific reconstruction of genome-scale metabolic networks.
 
 ## Usage
-### `reconstruction = swiftcore(S, rev, coreInd, weights [, solver])`
+### `reconstruction = swiftcore(S, rev, coreInd, weights, reduction [, solver])`
 
 ### Inputs
 1. `S`: the associated sparse **stoichiometric matrix**
 2. `rev`: the 0-1 vector with 1's corresponding to the **reversible reactions**
 3. `coreInd`: the set of indices corresponding to the **core reactions**
 4. `weights`: the **weight vector** for the penalties associated with each reaction
+5. `reduction`: boolean enabling the **metabolic network reduction** preprocess
 
 ### Optional inputs
 * `solver`: the **LP solver** to be used; the currently available options are either _gurobi_ or _linprog_ with the default value of _linprog_

@@ -1,5 +1,5 @@
 function flux = core(S, rev, blocked, weights, solver)
-%% the currently available options for the LP solver are 'gurobi' and 'linprog'
+%% the currently available options for the LP solver are 'gurobi', 'linprog', and 'cplex'
     [m, n] = size(S);
     dense = zeros(n, 1);
     dense(blocked == 1) = normrnd(0, 1, [sum(blocked), 1]);
@@ -43,6 +43,20 @@ function flux = core(S, rev, blocked, weights, solver)
         problem.solver = 'linprog';
         problem.options = optimset('Display', 'off');
         [result.x, result.objval, result.status, ~] = linprog(problem);
+        if result.status == 1
+            flux = result.x(1:n);
+        else
+            warning('Optimization was stopped with status %s\n', result.status);
+        end
+    elseif strcmp(solver, 'cplex')
+        problem.f = model.obj;
+        problem.Aineq = -model.A(m+1:m+2*k, :);
+        problem.bineq = model.rhs(m+1:m+2*k);
+        problem.Aeq = model.A(1:m, :);
+        problem.beq = model.rhs(1:m);
+        problem.lb = model.lb;
+        problem.ub = model.ub;
+        [result.x, result.objval, result.status] = cplexlp(problem);
         if result.status == 1
             flux = result.x(1:n);
         else

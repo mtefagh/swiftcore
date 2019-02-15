@@ -1,5 +1,5 @@
 function result = blocked(S, rev, solver)
-% the currently available options for the LP solver are 'gurobi' and 'linprog'
+%% the currently available options for the LP solver are 'gurobi', 'linprog', and 'cplex'
     [m, n] = size(S);
     irev = m + find(rev == 0);
     model.obj = zeros(m+n, 1);
@@ -29,6 +29,19 @@ function result = blocked(S, rev, solver)
         problem.solver = 'linprog';
         problem.options = optimset('Display', 'off');
         [result.x, result.objval, result.status, ~] = linprog(problem);
+        if result.status ~= 1
+            warning('Optimization is unstable!');
+            fprintf('Optimization returned status: %s\n', result.status);
+        end
+    elseif strcmp(solver, 'cplex')
+        problem.f = model.obj;
+        problem.Aineq = model.A(rev == 0, :);
+        problem.bineq = model.rhs(rev == 0);
+        problem.Aeq = model.A(rev ~= 0, :);
+        problem.beq = model.rhs(rev ~= 0);
+        problem.lb = model.lb;
+        problem.ub = model.ub;
+        [result.x, result.objval, result.status] = cplexlp(problem);
         if result.status ~= 1
             warning('Optimization is unstable!');
             fprintf('Optimization returned status: %s\n', result.status);

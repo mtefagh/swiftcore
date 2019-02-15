@@ -1,13 +1,14 @@
-function reconstruction = swiftcore(S, rev, coreInd, weights, varargin)
+function [reconstruction, LP] = swiftcore(S, rev, coreInd, weights, reduction, varargin)
 %% Usage
-%  reconstruction = swiftcore(S, rev, coreInd, weights [, solver])
+%  reconstruction = swiftcore(S, rev, coreInd, weights, reduction [, solver])
 %   * Inputs:
 %   - S: the associated sparse stoichiometric matrix
 %   - rev: the 0-1 vector with 1's corresponding to the reversible reactions
 %   - coreInd: the set of indices corresponding to the core reactions
 %   - weights: weight vector for the penalties associated with each reaction
+%   - reduction: boolean enabling the metabolic network reduction preprocess 
 %   - solver: the LP solver to be used; the currently available options are
-%   either 'gurobi' or 'linprog' with the default value of 'linprog'
+%   'gurobi', 'linprog', and 'cplex' with the default value of 'linprog'
 %   * Outputs:
 %   - reconstruction: the 0-1 indicator vector of the reactions constituting 
 %   the consistent metabolic network reconstructed from the core reactions
@@ -20,10 +21,9 @@ function reconstruction = swiftcore(S, rev, coreInd, weights, varargin)
     [m, n] = size(S);
     reacNum = (1:n).';
     fullCouplings = (1:n).';
-    %% finding the trivial full coupling relations
-    flag = true;
-    while flag
-        flag = false;
+    %% finding the trivial full coupling relations if the reduction flag is true
+    while reduction
+        reduction = false;
         for i = m:-1:1
             if i <= size(S, 1)
                 nzcols = find(S(i, :));
@@ -48,7 +48,7 @@ function reconstruction = swiftcore(S, rev, coreInd, weights, varargin)
                     weights(nzcols(1)) = weights(nzcols(1)) + weights(nzcols(2));
                     weights(nzcols(2)) = [];
                     reacNum(nzcols(2)) = [];
-                    flag = true;
+                    reduction = true;
                 end
             end
         end
@@ -61,6 +61,7 @@ function reconstruction = swiftcore(S, rev, coreInd, weights, varargin)
     tol = norm(S, 'fro')*eps(class(S));
     % phase one of unblocking the irreversible reactions
     blocked = zeros(length(weights), 1);
+    LP = 1;
     flux = core(S, rev, blocked, weights, solver);
     weights(abs(flux) > tol) = 0;
     % identifying the blocked reversible reactions
@@ -71,6 +72,7 @@ function reconstruction = swiftcore(S, rev, coreInd, weights, varargin)
     while any(blocked)
         % incrementing the core set until no reversible blocked reaction remains
         blockedSize = sum(blocked);
+        LP = LP + 1;
         flux = core(S, rev, blocked, weights, solver);
         weights(abs(flux) > tol) = 0;
         blocked(abs(flux) > tol) = 0;
