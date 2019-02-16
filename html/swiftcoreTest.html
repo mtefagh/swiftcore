@@ -1,0 +1,4039 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>swiftcoreTest</title><meta name="generator" content="MATLAB 9.5"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2019-02-16"><meta name="DC.source" content="swiftcoreTest.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><pre class="codeinput">clear <span class="string">all</span>; close <span class="string">all</span>; clc;
+<span class="comment">% importing the metabolic network model</span>
+load(<span class="string">'Recon3D_301/Recon3DModel_301.mat'</span>);
+model = Recon3DModel;
+model.rev = double(model.lb &lt; 0);
+clear <span class="string">Recon3DModel</span>;
+n = length(model.rxns);
+solver = <span class="string">'ibm_cplex'</span>;
+LP = zeros(2, 105);
+runtime = zeros(3, 105);
+performance = zeros(4, 105);
+errors = true(3, 105);
+<span class="keyword">for</span> k = 1:105
+    disp(k);
+    <span class="comment">% randomly sampling the set of core reactions</span>
+    core = randsample(n, 100*k);
+    <span class="comment">% FASTCORE</span>
+    tic;
+    coreRxn = fastcore(core, model, 1e-4);
+    runtime(1, k) = toc;
+    coreRxnBool = false(n, 1);
+    coreRxnBool(coreRxn) = true;
+    performance(1, k) = sum(coreRxnBool);
+    <span class="comment">% consistency checking</span>
+    <span class="keyword">if</span> all(coreRxnBool(core))
+        tempmodel.S = model.S(:, coreRxnBool);
+        tempmodel.rev = model.rev(coreRxnBool);
+        tempmodel.lb = model.lb(coreRxnBool);
+        tempmodel.ub = model.ub(coreRxnBool);
+        tempmodel.rxns = model.rxns(coreRxnBool);
+        tempmodel.c = model.c(coreRxnBool);
+        tempmodel.mets = model.mets;
+        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        <span class="keyword">if</span> all(A.' == 1:length(A))
+            errors(1, k) = false;
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+    <span class="comment">% SWIFTCORE w/o reduction</span>
+    tic;
+    [coreInd, numLP] = swiftcore(model.S, model.rev, core, ones(n, 1), false, solver);
+    runtime(2, k) = toc;
+    LP(1, k) = numLP;
+    performance(2, k) = sum(coreInd);
+    <span class="comment">% consistency checking</span>
+    <span class="keyword">if</span> all(coreInd(core))
+        tempmodel.S = model.S(:, coreInd);
+        tempmodel.rev = model.rev(coreInd);
+        tempmodel.lb = model.lb(coreInd);
+        tempmodel.ub = model.ub(coreInd);
+        tempmodel.rxns = model.rxns(coreInd);
+        tempmodel.c = model.c(coreInd);
+        tempmodel.mets = model.mets;
+        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        <span class="keyword">if</span> all(A.' == 1:length(A))
+            errors(2, k) = false;
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+    <span class="comment">% SWIFTCORE w/ reduction</span>
+    tic;
+    [coreIndReduce, numLP] = swiftcore(model.S, model.rev, core, ones(n, 1), true, solver);
+    runtime(3, k) = toc;
+    LP(2, k) = numLP;
+    performance(3, k) = sum(coreIndReduce);
+    <span class="comment">% consistency checking</span>
+    <span class="keyword">if</span> all(coreIndReduce(core))
+        tempmodel.S = model.S(:, coreIndReduce);
+        tempmodel.rev = model.rev(coreIndReduce);
+        tempmodel.lb = model.lb(coreIndReduce);
+        tempmodel.ub = model.ub(coreIndReduce);
+        tempmodel.rxns = model.rxns(coreIndReduce);
+        tempmodel.c = model.c(coreIndReduce);
+        tempmodel.mets = model.mets;
+        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        <span class="keyword">if</span> all(A.' == 1:length(A))
+            errors(3, k) = false;
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+    <span class="comment">% calculating the size of the intersection of the answers of the three algorithms above</span>
+    performance(4, k) = sum(coreIndReduce + coreInd + coreRxnBool == 3);
+<span class="keyword">end</span>
+<span class="comment">% consistency checking</span>
+fprintf(<span class="string">'FASTCORE returns wrong answers in %d%% of cases!\n'</span>, round(100*sum(errors(1,:))/size(errors,2)));
+fprintf(<span class="string">'SWIFTCORE w/o reduction returns wrong answers in %d%% of cases!\n'</span>, round(100*sum(errors(2,:))/size(errors,2)));
+fprintf(<span class="string">'SWIFTCORE w/ reduction returns wrong answers in %d%% of cases!\n'</span>, round(100*sum(errors(3,:))/size(errors,2)));
+<span class="comment">% drawing scatterplots for the comparison of the number of LPs</span>
+figure();
+plot(100*(1:105),LP(1,:),<span class="string">'o'</span>,100*(1:105),LP(2,:),<span class="string">'*'</span>);
+legend({<span class="string">'SWIFTCORE w/o reduction'</span>,<span class="string">'SWIFTCORE w/ reduction'</span>});
+xlabel(<span class="string">'number of core reactions'</span>);
+ylabel(<span class="string">'number of solved LPs'</span>);
+savefig(<span class="string">'LP'</span>);
+<span class="comment">% drawing scatterplots for the comparison of the runtime</span>
+figure();
+plot(100*(1:105),runtime(1,:),<span class="string">'o'</span>,100*(1:105),runtime(2,:),<span class="string">'*'</span>,100*(1:105),runtime(3,:),<span class="string">'+'</span>);
+legend({<span class="string">'FASTCORE'</span>,<span class="string">'SWIFTCORE w/o reduction'</span>,<span class="string">'SWIFTCORE w/ reduction'</span>},<span class="string">'Location'</span>,<span class="string">'northeast'</span>);
+xlabel(<span class="string">'number of core reactions'</span>);
+ylabel(<span class="string">'runtime in seconds'</span>);
+savefig(<span class="string">'runtime'</span>);
+<span class="comment">% drawing scatterplots for the comparison of the sparsity</span>
+figure();
+plot(100*(1:105),performance(1,:),<span class="string">'o'</span>,100*(1:105),performance(2,:),<span class="string">'*'</span>,<span class="keyword">...</span>
+    100*(1:105),performance(3,:),<span class="string">'+'</span>,100*(1:105),performance(4,:),<span class="string">'x'</span>);
+legend({<span class="string">'FASTCORE'</span>,<span class="string">'SWIFTCORE w/o reduction'</span>,<span class="string">'SWIFTCORE w/ reduction'</span>,<span class="string">'intersection'</span>},<span class="string">'Location'</span>,<span class="string">'southeast'</span>);
+xlabel(<span class="string">'number of core reactions'</span>);
+ylabel(<span class="string">'size of the subnetwork'</span>);
+savefig(<span class="string">'performance'</span>);
+<span class="comment">% comparing the improvement percentage of the runtime</span>
+fprintf(<span class="string">'switftcore w/o reduction was computed in %d%% of fastcore runtime.\n'</span>, round(mean(runtime(2, :)./runtime(1, :))*100));
+fprintf(<span class="string">'switftcore w/ reduction was computed in %d%% of fastcore runtime.\n'</span>, round(mean(runtime(3, :)./runtime(1, :))*100));
+<span class="comment">% comparing the improvement percentage of the sparsity</span>
+fprintf(<span class="string">'switftcore w/o reduction performed with %d%% of fastcore reactions.\n'</span>, round(mean(performance(2, :)./performance(1, :))*100));
+fprintf(<span class="string">'switftcore w/ reduction performed with %d%% of fastcore reactions.\n'</span>, round(mean(performance(3, :)./performance(1, :))*100));
+fprintf(<span class="string">'The average number of reactions in the intersection is %d%% of fastcore reactions.\n'</span>, <span class="keyword">...</span>
+    round(mean(performance(4, :)./performance(1, :))*100));
+</pre><pre class="codeoutput">     1
+
+|J|=50  |A|=543
+|J|=48  |A|=754
+|J|=6  |A|=754
+(flip)  |A|=788
+|J|=0  |A|=788
+Warning: File: C:\Program
+Files\IBM\ILOG\CPLEX_Studio128\cplex\matlab\x64_win64\@Cplex\Cplex.p Line: 965
+Column: 0
+Defining "changedParam" in the nested function shares it with the parent
+function.  In a future release, to share "changedParam" between parent and
+nested functions, explicitly define it in the parent function. 
+     2
+
+|J|=96  |A|=799
+|J|=78  |A|=1156
+|J|=5  |A|=1156
+(flip)  |A|=1184
+|J|=0  |A|=1184
+     3
+
+|J|=156  |A|=1007
+|J|=119  |A|=1492
+|J|=15  |A|=1492
+(flip)  |A|=1577
+|J|=0  |A|=1577
+     4
+
+|J|=203  |A|=1202
+|J|=156  |A|=1776
+|J|=11  |A|=1776
+(flip)  |A|=1826
+|J|=0  |A|=1826
+     5
+
+|J|=261  |A|=1546
+|J|=185  |A|=2203
+|J|=16  |A|=2203
+(flip)  |A|=2276
+|J|=0  |A|=2276
+     6
+
+|J|=298  |A|=1612
+|J|=218  |A|=2299
+|J|=33  |A|=2299
+(flip)  |A|=2419
+|J|=8  |A|=2419
+(flip)  |A|=2419
+|A|=2433
+|J|=0  |A|=2433
+     7
+
+|J|=353  |A|=1839
+|J|=260  |A|=2631
+|J|=42  |A|=2631
+(flip)  |A|=2822
+|J|=6  |A|=2822
+(flip)  |A|=2822
+|A|=2829
+|J|=2  |A|=2834
+|J|=0  |A|=2834
+     8
+
+|J|=412  |A|=1956
+|J|=287  |A|=2891
+|J|=39  |A|=2891
+(flip)  |A|=3018
+|J|=12  |A|=3018
+(flip)  |A|=3020
+|J|=11  |A|=3020
+(flip)  |A|=3020
+|A|=3036
+|J|=1  |A|=3038
+|J|=0  |A|=3038
+     9
+
+|J|=455  |A|=2116
+|J|=297  |A|=3050
+|J|=29  |A|=3050
+(flip)  |A|=3150
+|J|=6  |A|=3150
+(flip)  |A|=3150
+|A|=3156
+|J|=2  |A|=3161
+|J|=0  |A|=3161
+    10
+
+|J|=518  |A|=2308
+|J|=319  |A|=3241
+|J|=51  |A|=3241
+(flip)  |A|=3408
+|J|=10  |A|=3408
+(flip)  |A|=3408
+|A|=3425
+|J|=2  |A|=3425
+(flip)  |A|=3430
+|J|=0  |A|=3430
+    11
+
+|J|=546  |A|=2334
+|J|=364  |A|=3408
+|J|=52  |A|=3408
+(flip)  |A|=3555
+|J|=17  |A|=3555
+(flip)  |A|=3559
+|J|=16  |A|=3559
+(flip)  |A|=3559
+|A|=3574
+|J|=6  |A|=3574
+(flip)  |A|=3578
+|J|=4  |A|=3578
+(flip)  |A|=3582
+|J|=2  |A|=3582
+(flip)  |A|=3586
+|J|=0  |A|=3586
+    12
+
+|J|=626  |A|=2502
+|J|=382  |A|=3594
+|J|=50  |A|=3594
+(flip)  |A|=3756
+|J|=9  |A|=3756
+(flip)  |A|=3759
+|J|=8  |A|=3759
+(flip)  |A|=3759
+|A|=3769
+|J|=2  |A|=3769
+(flip)  |A|=3773
+|J|=0  |A|=3773
+    13
+
+|J|=684  |A|=2945
+|J|=358  |A|=3923
+|J|=53  |A|=3923
+(flip)  |A|=4074
+|J|=14  |A|=4074
+(flip)  |A|=4074
+|A|=4087
+|J|=6  |A|=4090
+|J|=4  |A|=4090
+(flip)  |A|=4095
+|J|=2  |A|=4101
+|J|=0  |A|=4101
+    14
+
+|J|=663  |A|=2701
+|J|=451  |A|=3909
+|J|=79  |A|=3909
+(flip)  |A|=4132
+|J|=20  |A|=4132
+(flip)  |A|=4132
+|A|=4163
+|J|=4  |A|=4171
+|J|=2  |A|=4171
+(flip)  |A|=4176
+|J|=0  |A|=4176
+    15
+
+|J|=785  |A|=2894
+|J|=439  |A|=4130
+|J|=70  |A|=4130
+(flip)  |A|=4287
+|J|=27  |A|=4287
+(flip)  |A|=4295
+|J|=26  |A|=4295
+(flip)  |A|=4295
+|A|=4319
+|J|=10  |A|=4319
+(flip)  |A|=4324
+|J|=8  |A|=4324
+(flip)  |A|=4328
+|J|=6  |A|=4328
+(flip)  |A|=4332
+|J|=4  |A|=4332
+(flip)  |A|=4336
+|J|=2  |A|=4336
+(flip)  |A|=4340
+|J|=0  |A|=4340
+    16
+
+|J|=805  |A|=2997
+|J|=496  |A|=4304
+|J|=74  |A|=4304
+(flip)  |A|=4479
+|J|=27  |A|=4479
+(flip)  |A|=4479
+|A|=4499
+|J|=15  |A|=4499
+(flip)  |A|=4504
+|J|=13  |A|=4511
+|J|=10  |A|=4511
+(flip)  |A|=4515
+|J|=8  |A|=4519
+|J|=6  |A|=4519
+(flip)  |A|=4526
+|J|=4  |A|=4531
+|J|=2  |A|=4537
+|J|=0  |A|=4537
+    17
+
+|J|=878  |A|=3202
+|J|=477  |A|=4381
+|J|=94  |A|=4381
+(flip)  |A|=4544
+|J|=50  |A|=4544
+(flip)  |A|=4544
+|A|=4608
+|J|=10  |A|=4608
+(flip)  |A|=4614
+|J|=8  |A|=4614
+(flip)  |A|=4619
+|J|=6  |A|=4623
+|J|=4  |A|=4627
+|J|=2  |A|=4631
+|J|=0  |A|=4631
+    18
+
+|J|=922  |A|=3252
+|J|=510  |A|=4494
+|J|=104  |A|=4494
+(flip)  |A|=4686
+|J|=50  |A|=4686
+(flip)  |A|=4692
+|J|=49  |A|=4692
+(flip)  |A|=4692
+|A|=4738
+|J|=21  |A|=4738
+(flip)  |A|=4750
+|J|=17  |A|=4750
+(flip)  |A|=4754
+|J|=15  |A|=4754
+(flip)  |A|=4759
+|J|=13  |A|=4759
+(flip)  |A|=4767
+|J|=11  |A|=4771
+|J|=9  |A|=4771
+(flip)  |A|=4777
+|J|=7  |A|=4777
+(flip)  |A|=4782
+|J|=5  |A|=4782
+(flip)  |A|=4786
+|J|=3  |A|=4786
+(flip)  |A|=4790
+|J|=2  |A|=4795
+|J|=0  |A|=4795
+    19
+
+|J|=954  |A|=3387
+|J|=549  |A|=4771
+|J|=103  |A|=4771
+(flip)  |A|=4953
+|J|=51  |A|=4953
+(flip)  |A|=4958
+|J|=49  |A|=4958
+(flip)  |A|=4958
+|A|=5015
+|J|=13  |A|=5015
+(flip)  |A|=5019
+|J|=10  |A|=5019
+(flip)  |A|=5025
+|J|=8  |A|=5030
+|J|=6  |A|=5030
+(flip)  |A|=5036
+|J|=4  |A|=5036
+(flip)  |A|=5042
+|J|=2  |A|=5042
+(flip)  |A|=5047
+|J|=0  |A|=5047
+    20
+
+|J|=1003  |A|=3490
+|J|=533  |A|=4844
+|J|=81  |A|=4844
+(flip)  |A|=4990
+|J|=40  |A|=4990
+(flip)  |A|=4990
+|A|=5026
+|J|=16  |A|=5026
+(flip)  |A|=5033
+|J|=14  |A|=5036
+|J|=12  |A|=5036
+(flip)  |A|=5041
+|J|=10  |A|=5045
+|J|=8  |A|=5049
+|J|=6  |A|=5056
+|J|=4  |A|=5063
+|J|=2  |A|=5067
+|J|=0  |A|=5067
+    21
+
+|J|=1042  |A|=3486
+|J|=592  |A|=4960
+|J|=92  |A|=4960
+(flip)  |A|=5130
+|J|=43  |A|=5130
+(flip)  |A|=5130
+|A|=5182
+|J|=12  |A|=5192
+|J|=8  |A|=5192
+(flip)  |A|=5196
+|J|=6  |A|=5196
+(flip)  |A|=5200
+|J|=4  |A|=5204
+|J|=2  |A|=5208
+|J|=0  |A|=5208
+    22
+
+|J|=1131  |A|=3730
+|J|=555  |A|=5099
+|J|=92  |A|=5099
+(flip)  |A|=5268
+|J|=47  |A|=5268
+(flip)  |A|=5270
+|J|=46  |A|=5270
+(flip)  |A|=5270
+|A|=5318
+|J|=16  |A|=5318
+(flip)  |A|=5323
+|J|=14  |A|=5323
+(flip)  |A|=5327
+|J|=11  |A|=5327
+(flip)  |A|=5331
+|J|=8  |A|=5331
+(flip)  |A|=5335
+|J|=6  |A|=5338
+|J|=4  |A|=5338
+(flip)  |A|=5343
+|J|=2  |A|=5343
+(flip)  |A|=5350
+|J|=0  |A|=5350
+    23
+
+|J|=1183  |A|=3811
+|J|=592  |A|=5169
+|J|=99  |A|=5169
+(flip)  |A|=5347
+|J|=46  |A|=5347
+(flip)  |A|=5353
+|J|=44  |A|=5353
+(flip)  |A|=5353
+|A|=5405
+|J|=14  |A|=5405
+(flip)  |A|=5410
+|J|=12  |A|=5410
+(flip)  |A|=5415
+|J|=10  |A|=5415
+(flip)  |A|=5419
+|J|=8  |A|=5419
+(flip)  |A|=5427
+|J|=5  |A|=5427
+(flip)  |A|=5432
+|J|=3  |A|=5432
+(flip)  |A|=5437
+|J|=0  |A|=5437
+    24
+
+|J|=1223  |A|=3833
+|J|=615  |A|=5304
+|J|=102  |A|=5304
+(flip)  |A|=5465
+|J|=58  |A|=5465
+(flip)  |A|=5465
+|A|=5519
+|J|=23  |A|=5537
+|J|=15  |A|=5541
+|J|=13  |A|=5546
+|J|=11  |A|=5546
+(flip)  |A|=5549
+|J|=9  |A|=5553
+|J|=7  |A|=5553
+(flip)  |A|=5557
+|J|=5  |A|=5562
+|J|=3  |A|=5566
+|J|=0  |A|=5566
+    25
+
+|J|=1271  |A|=3944
+|J|=641  |A|=5327
+|J|=134  |A|=5330
+|J|=133  |A|=5330
+(flip)  |A|=5547
+|J|=71  |A|=5547
+(flip)  |A|=5551
+|J|=70  |A|=5551
+(flip)  |A|=5551
+|A|=5606
+|J|=38  |A|=5611
+|J|=36  |A|=5615
+|J|=34  |A|=5615
+(flip)  |A|=5620
+|J|=31  |A|=5625
+|J|=29  |A|=5625
+(flip)  |A|=5632
+|J|=25  |A|=5632
+(flip)  |A|=5636
+|J|=23  |A|=5643
+|J|=20  |A|=5648
+|J|=18  |A|=5648
+(flip)  |A|=5652
+|J|=16  |A|=5656
+|J|=14  |A|=5656
+(flip)  |A|=5660
+|J|=12  |A|=5660
+(flip)  |A|=5666
+|J|=9  |A|=5670
+|J|=7  |A|=5670
+(flip)  |A|=5674
+|J|=5  |A|=5674
+(flip)  |A|=5678
+|J|=3  |A|=5685
+|J|=0  |A|=5685
+    26
+
+|J|=1296  |A|=4006
+|J|=679  |A|=5558
+|J|=125  |A|=5558
+(flip)  |A|=5737
+|J|=66  |A|=5737
+(flip)  |A|=5741
+|J|=65  |A|=5741
+(flip)  |A|=5741
+|A|=5814
+|J|=19  |A|=5822
+|J|=15  |A|=5822
+(flip)  |A|=5829
+|J|=12  |A|=5829
+(flip)  |A|=5835
+|J|=10  |A|=5835
+(flip)  |A|=5839
+|J|=8  |A|=5839
+(flip)  |A|=5843
+|J|=6  |A|=5843
+(flip)  |A|=5847
+|J|=4  |A|=5847
+(flip)  |A|=5852
+|J|=2  |A|=5852
+(flip)  |A|=5856
+|J|=0  |A|=5856
+    27
+
+|J|=1377  |A|=4074
+|J|=637  |A|=5494
+|J|=125  |A|=5494
+(flip)  |A|=5663
+|J|=76  |A|=5663
+(flip)  |A|=5663
+|A|=5732
+|J|=32  |A|=5743
+|J|=28  |A|=5743
+(flip)  |A|=5748
+|J|=25  |A|=5761
+|J|=20  |A|=5764
+|J|=18  |A|=5764
+(flip)  |A|=5773
+|J|=16  |A|=5773
+(flip)  |A|=5777
+|J|=14  |A|=5782
+|J|=12  |A|=5785
+|J|=10  |A|=5790
+|J|=7  |A|=5794
+|J|=5  |A|=5798
+|J|=3  |A|=5798
+(flip)  |A|=5802
+|J|=0  |A|=5802
+    28
+
+|J|=1436  |A|=4162
+|J|=680  |A|=5674
+|J|=142  |A|=5674
+(flip)  |A|=5833
+|J|=89  |A|=5833
+(flip)  |A|=5838
+|J|=87  |A|=5838
+(flip)  |A|=5838
+|A|=5925
+|J|=31  |A|=5929
+|J|=29  |A|=5939
+|J|=25  |A|=5944
+|J|=23  |A|=5948
+|J|=21  |A|=5948
+(flip)  |A|=5956
+|J|=18  |A|=5956
+(flip)  |A|=5964
+|J|=16  |A|=5964
+(flip)  |A|=5970
+|J|=14  |A|=5973
+|J|=12  |A|=5973
+(flip)  |A|=5977
+|J|=10  |A|=5977
+(flip)  |A|=5981
+|J|=8  |A|=5984
+|J|=5  |A|=5984
+(flip)  |A|=5988
+|J|=3  |A|=5988
+(flip)  |A|=5992
+|J|=0  |A|=5992
+    29
+
+|J|=1472  |A|=4293
+|J|=693  |A|=5778
+|J|=147  |A|=5778
+(flip)  |A|=5955
+|J|=81  |A|=5955
+(flip)  |A|=5959
+|J|=80  |A|=5959
+(flip)  |A|=5959
+|A|=6035
+|J|=30  |A|=6043
+|J|=26  |A|=6043
+(flip)  |A|=6048
+|J|=24  |A|=6048
+(flip)  |A|=6053
+|J|=22  |A|=6053
+(flip)  |A|=6057
+|J|=20  |A|=6065
+|J|=18  |A|=6076
+|J|=11  |A|=6080
+|J|=9  |A|=6080
+(flip)  |A|=6085
+|J|=7  |A|=6085
+(flip)  |A|=6089
+|J|=4  |A|=6089
+(flip)  |A|=6095
+|J|=2  |A|=6095
+(flip)  |A|=6099
+|J|=0  |A|=6099
+    30
+
+|J|=1488  |A|=4272
+|J|=772  |A|=5855
+|J|=173  |A|=5857
+|J|=172  |A|=5857
+(flip)  |A|=6043
+|J|=110  |A|=6043
+(flip)  |A|=6047
+|J|=109  |A|=6047
+(flip)  |A|=6047
+|A|=6170
+|J|=28  |A|=6177
+|J|=24  |A|=6177
+(flip)  |A|=6182
+|J|=22  |A|=6187
+|J|=20  |A|=6192
+|J|=18  |A|=6192
+(flip)  |A|=6197
+|J|=16  |A|=6202
+|J|=13  |A|=6206
+|J|=11  |A|=6206
+(flip)  |A|=6211
+|J|=9  |A|=6214
+|J|=7  |A|=6214
+(flip)  |A|=6218
+|J|=5  |A|=6218
+(flip)  |A|=6221
+|J|=3  |A|=6221
+(flip)  |A|=6225
+|J|=0  |A|=6225
+    31
+
+|J|=1572  |A|=4458
+|J|=750  |A|=5991
+|J|=156  |A|=5991
+(flip)  |A|=6178
+|J|=98  |A|=6178
+(flip)  |A|=6191
+|J|=95  |A|=6191
+(flip)  |A|=6191
+|A|=6286
+|J|=32  |A|=6286
+(flip)  |A|=6289
+|J|=30  |A|=6293
+|J|=28  |A|=6298
+|J|=26  |A|=6303
+|J|=23  |A|=6303
+(flip)  |A|=6307
+|J|=21  |A|=6311
+|J|=19  |A|=6311
+(flip)  |A|=6317
+|J|=16  |A|=6317
+(flip)  |A|=6324
+|J|=14  |A|=6327
+|J|=12  |A|=6332
+|J|=10  |A|=6332
+(flip)  |A|=6336
+|J|=8  |A|=6336
+(flip)  |A|=6342
+|J|=6  |A|=6342
+(flip)  |A|=6346
+|J|=4  |A|=6346
+(flip)  |A|=6350
+|J|=2  |A|=6350
+(flip)  |A|=6355
+|J|=0  |A|=6355
+    32
+
+|J|=1581  |A|=4457
+|J|=780  |A|=6016
+|J|=168  |A|=6023
+|J|=166  |A|=6023
+(flip)  |A|=6173
+|J|=115  |A|=6173
+(flip)  |A|=6184
+|J|=113  |A|=6184
+(flip)  |A|=6184
+|A|=6279
+|J|=50  |A|=6279
+(flip)  |A|=6286
+|J|=46  |A|=6291
+|J|=44  |A|=6291
+(flip)  |A|=6303
+|J|=40  |A|=6303
+(flip)  |A|=6314
+|J|=34  |A|=6316
+|J|=32  |A|=6316
+(flip)  |A|=6322
+|J|=30  |A|=6322
+(flip)  |A|=6327
+|J|=28  |A|=6327
+(flip)  |A|=6331
+|J|=25  |A|=6331
+(flip)  |A|=6335
+|J|=23  |A|=6335
+(flip)  |A|=6339
+|J|=20  |A|=6339
+(flip)  |A|=6343
+|J|=18  |A|=6348
+|J|=16  |A|=6352
+|J|=14  |A|=6352
+(flip)  |A|=6357
+|J|=12  |A|=6360
+|J|=10  |A|=6360
+(flip)  |A|=6364
+|J|=8  |A|=6370
+|J|=6  |A|=6370
+(flip)  |A|=6374
+|J|=4  |A|=6374
+(flip)  |A|=6381
+|J|=2  |A|=6388
+|J|=0  |A|=6388
+    33
+
+|J|=1664  |A|=4576
+|J|=777  |A|=6094
+|J|=189  |A|=6094
+(flip)  |A|=6298
+|J|=121  |A|=6298
+(flip)  |A|=6315
+|J|=118  |A|=6315
+(flip)  |A|=6315
+|A|=6445
+|J|=34  |A|=6450
+|J|=31  |A|=6450
+(flip)  |A|=6454
+|J|=29  |A|=6459
+|J|=27  |A|=6459
+(flip)  |A|=6463
+|J|=25  |A|=6463
+(flip)  |A|=6468
+|J|=22  |A|=6473
+|J|=20  |A|=6477
+|J|=18  |A|=6477
+(flip)  |A|=6486
+|J|=15  |A|=6486
+(flip)  |A|=6496
+|J|=13  |A|=6496
+(flip)  |A|=6500
+|J|=10  |A|=6500
+(flip)  |A|=6504
+|J|=8  |A|=6504
+(flip)  |A|=6510
+|J|=5  |A|=6510
+(flip)  |A|=6514
+|J|=3  |A|=6514
+(flip)  |A|=6519
+|J|=1  |A|=6522
+|J|=0  |A|=6522
+    34
+
+|J|=1719  |A|=4710
+|J|=769  |A|=6200
+|J|=178  |A|=6200
+(flip)  |A|=6382
+|J|=120  |A|=6382
+(flip)  |A|=6389
+|J|=118  |A|=6389
+(flip)  |A|=6389
+|A|=6535
+|J|=23  |A|=6539
+|J|=21  |A|=6543
+|J|=19  |A|=6543
+(flip)  |A|=6554
+|J|=14  |A|=6558
+|J|=12  |A|=6558
+(flip)  |A|=6563
+|J|=10  |A|=6567
+|J|=7  |A|=6569
+|J|=5  |A|=6569
+(flip)  |A|=6573
+|J|=3  |A|=6577
+|J|=0  |A|=6577
+    35
+
+|J|=1791  |A|=4756
+|J|=802  |A|=6301
+|J|=199  |A|=6301
+(flip)  |A|=6457
+|J|=147  |A|=6457
+(flip)  |A|=6457
+|A|=6583
+|J|=63  |A|=6583
+(flip)  |A|=6590
+|J|=59  |A|=6597
+|J|=55  |A|=6597
+(flip)  |A|=6605
+|J|=51  |A|=6611
+|J|=47  |A|=6611
+(flip)  |A|=6615
+|J|=45  |A|=6622
+|J|=43  |A|=6626
+|J|=41  |A|=6626
+(flip)  |A|=6630
+|J|=39  |A|=6630
+(flip)  |A|=6634
+|J|=37  |A|=6638
+|J|=35  |A|=6638
+(flip)  |A|=6645
+|J|=32  |A|=6655
+|J|=28  |A|=6655
+(flip)  |A|=6659
+|J|=26  |A|=6666
+|J|=23  |A|=6670
+|J|=20  |A|=6674
+|J|=18  |A|=6678
+|J|=16  |A|=6682
+|J|=14  |A|=6689
+|J|=11  |A|=6693
+|J|=8  |A|=6697
+|J|=5  |A|=6701
+|J|=3  |A|=6705
+|J|=0  |A|=6705
+    36
+
+|J|=1843  |A|=4924
+|J|=783  |A|=6438
+|J|=194  |A|=6438
+(flip)  |A|=6610
+|J|=138  |A|=6610
+(flip)  |A|=6616
+|J|=136  |A|=6616
+(flip)  |A|=6616
+|A|=6763
+|J|=40  |A|=6763
+(flip)  |A|=6766
+|J|=38  |A|=6766
+(flip)  |A|=6770
+|J|=36  |A|=6770
+(flip)  |A|=6783
+|J|=29  |A|=6787
+|J|=27  |A|=6789
+|J|=26  |A|=6792
+|J|=24  |A|=6794
+|J|=23  |A|=6799
+|J|=21  |A|=6799
+(flip)  |A|=6803
+|J|=18  |A|=6803
+(flip)  |A|=6808
+|J|=16  |A|=6808
+(flip)  |A|=6812
+|J|=14  |A|=6812
+(flip)  |A|=6816
+|J|=11  |A|=6816
+(flip)  |A|=6820
+|J|=9  |A|=6820
+(flip)  |A|=6825
+|J|=6  |A|=6825
+(flip)  |A|=6830
+|J|=4  |A|=6830
+(flip)  |A|=6834
+|J|=1  |A|=6834
+(flip)  |A|=6838
+|J|=0  |A|=6838
+    37
+
+|J|=1852  |A|=4881
+|J|=832  |A|=6464
+|J|=182  |A|=6464
+(flip)  |A|=6631
+|J|=128  |A|=6631
+(flip)  |A|=6635
+|J|=126  |A|=6635
+(flip)  |A|=6635
+|A|=6761
+|J|=43  |A|=6761
+(flip)  |A|=6772
+|J|=39  |A|=6772
+(flip)  |A|=6777
+|J|=37  |A|=6780
+|J|=35  |A|=6780
+(flip)  |A|=6785
+|J|=33  |A|=6785
+(flip)  |A|=6792
+|J|=30  |A|=6797
+|J|=28  |A|=6802
+|J|=26  |A|=6806
+|J|=24  |A|=6806
+(flip)  |A|=6810
+|J|=22  |A|=6810
+(flip)  |A|=6818
+|J|=17  |A|=6822
+|J|=15  |A|=6822
+(flip)  |A|=6826
+|J|=13  |A|=6826
+(flip)  |A|=6830
+|J|=11  |A|=6830
+(flip)  |A|=6835
+|J|=9  |A|=6839
+|J|=7  |A|=6841
+|J|=5  |A|=6841
+(flip)  |A|=6845
+|J|=2  |A|=6850
+|J|=0  |A|=6850
+    38
+
+|J|=1915  |A|=4934
+|J|=876  |A|=6490
+|J|=222  |A|=6490
+(flip)  |A|=6648
+|J|=171  |A|=6648
+(flip)  |A|=6654
+|J|=169  |A|=6654
+(flip)  |A|=6654
+|A|=6838
+|J|=49  |A|=6846
+|J|=44  |A|=6857
+|J|=38  |A|=6857
+(flip)  |A|=6862
+|J|=35  |A|=6862
+(flip)  |A|=6865
+|J|=33  |A|=6865
+(flip)  |A|=6868
+|J|=31  |A|=6868
+(flip)  |A|=6875
+|J|=28  |A|=6875
+(flip)  |A|=6880
+|J|=26  |A|=6880
+(flip)  |A|=6883
+|J|=24  |A|=6887
+|J|=22  |A|=6887
+(flip)  |A|=6891
+|J|=20  |A|=6895
+|J|=18  |A|=6899
+|J|=16  |A|=6908
+|J|=11  |A|=6911
+|J|=10  |A|=6911
+(flip)  |A|=6915
+|J|=7  |A|=6915
+(flip)  |A|=6919
+|J|=5  |A|=6923
+|J|=2  |A|=6923
+(flip)  |A|=6927
+|J|=0  |A|=6927
+    39
+
+|J|=1914  |A|=5061
+|J|=878  |A|=6602
+|J|=223  |A|=6602
+(flip)  |A|=6802
+|J|=155  |A|=6802
+(flip)  |A|=6805
+|J|=154  |A|=6805
+(flip)  |A|=6805
+|A|=6955
+|J|=55  |A|=6955
+(flip)  |A|=6963
+|J|=51  |A|=6966
+|J|=49  |A|=6966
+(flip)  |A|=6969
+|J|=47  |A|=6969
+(flip)  |A|=6974
+|J|=43  |A|=6974
+(flip)  |A|=6977
+|J|=41  |A|=6977
+(flip)  |A|=6982
+|J|=39  |A|=6982
+(flip)  |A|=6987
+|J|=35  |A|=6987
+(flip)  |A|=6991
+|J|=33  |A|=6991
+(flip)  |A|=6997
+|J|=31  |A|=6997
+(flip)  |A|=7005
+|J|=27  |A|=7005
+(flip)  |A|=7012
+|J|=25  |A|=7012
+(flip)  |A|=7025
+|J|=20  |A|=7029
+|J|=18  |A|=7029
+(flip)  |A|=7033
+|J|=17  |A|=7037
+|J|=15  |A|=7044
+|J|=13  |A|=7049
+|J|=11  |A|=7049
+(flip)  |A|=7053
+|J|=9  |A|=7053
+(flip)  |A|=7057
+|J|=6  |A|=7061
+|J|=4  |A|=7061
+(flip)  |A|=7065
+|J|=2  |A|=7070
+|J|=0  |A|=7070
+    40
+
+|J|=2029  |A|=5157
+|J|=842  |A|=6666
+|J|=218  |A|=6666
+(flip)  |A|=6827
+|J|=161  |A|=6827
+(flip)  |A|=6829
+|J|=160  |A|=6829
+(flip)  |A|=6829
+|A|=6974
+|J|=64  |A|=6984
+|J|=60  |A|=6994
+|J|=53  |A|=6994
+(flip)  |A|=6998
+|J|=51  |A|=6998
+(flip)  |A|=7001
+|J|=49  |A|=7001
+(flip)  |A|=7005
+|J|=47  |A|=7005
+(flip)  |A|=7010
+|J|=45  |A|=7015
+|J|=43  |A|=7020
+|J|=41  |A|=7020
+(flip)  |A|=7024
+|J|=39  |A|=7024
+(flip)  |A|=7028
+|J|=37  |A|=7028
+(flip)  |A|=7036
+|J|=31  |A|=7041
+|J|=29  |A|=7041
+(flip)  |A|=7048
+|J|=25  |A|=7051
+|J|=23  |A|=7051
+(flip)  |A|=7055
+|J|=21  |A|=7055
+(flip)  |A|=7059
+|J|=19  |A|=7059
+(flip)  |A|=7063
+|J|=18  |A|=7063
+(flip)  |A|=7067
+|J|=15  |A|=7067
+(flip)  |A|=7072
+|J|=12  |A|=7079
+|J|=8  |A|=7079
+(flip)  |A|=7083
+|J|=6  |A|=7083
+(flip)  |A|=7087
+|J|=4  |A|=7087
+(flip)  |A|=7091
+|J|=2  |A|=7091
+(flip)  |A|=7096
+|J|=0  |A|=7096
+    41
+
+|J|=2056  |A|=5275
+|J|=828  |A|=6729
+|J|=217  |A|=6729
+(flip)  |A|=6880
+|J|=163  |A|=6880
+(flip)  |A|=6885
+|J|=162  |A|=6885
+(flip)  |A|=6885
+|A|=7048
+|J|=55  |A|=7061
+|J|=49  |A|=7066
+|J|=46  |A|=7066
+(flip)  |A|=7076
+|J|=42  |A|=7084
+|J|=39  |A|=7084
+(flip)  |A|=7088
+|J|=36  |A|=7088
+(flip)  |A|=7101
+|J|=29  |A|=7105
+|J|=27  |A|=7108
+|J|=25  |A|=7112
+|J|=23  |A|=7112
+(flip)  |A|=7119
+|J|=20  |A|=7119
+(flip)  |A|=7126
+|J|=18  |A|=7126
+(flip)  |A|=7130
+|J|=16  |A|=7130
+(flip)  |A|=7134
+|J|=13  |A|=7141
+|J|=11  |A|=7145
+|J|=9  |A|=7145
+(flip)  |A|=7150
+|J|=6  |A|=7150
+(flip)  |A|=7154
+|J|=3  |A|=7158
+|J|=0  |A|=7158
+    42
+
+|J|=2095  |A|=5139
+|J|=927  |A|=6647
+|J|=281  |A|=6656
+|J|=277  |A|=6656
+(flip)  |A|=6860
+|J|=204  |A|=6860
+(flip)  |A|=6879
+|J|=196  |A|=6879
+(flip)  |A|=6879
+|A|=7099
+|J|=55  |A|=7102
+|J|=53  |A|=7108
+|J|=50  |A|=7108
+(flip)  |A|=7114
+|J|=48  |A|=7118
+|J|=45  |A|=7118
+(flip)  |A|=7122
+|J|=42  |A|=7122
+(flip)  |A|=7126
+|J|=40  |A|=7126
+(flip)  |A|=7130
+|J|=38  |A|=7130
+(flip)  |A|=7143
+|J|=35  |A|=7150
+|J|=33  |A|=7152
+|J|=32  |A|=7156
+|J|=30  |A|=7159
+|J|=28  |A|=7159
+(flip)  |A|=7163
+|J|=25  |A|=7167
+|J|=23  |A|=7167
+(flip)  |A|=7172
+|J|=21  |A|=7172
+(flip)  |A|=7175
+|J|=19  |A|=7180
+|J|=16  |A|=7180
+(flip)  |A|=7184
+|J|=14  |A|=7184
+(flip)  |A|=7188
+|J|=12  |A|=7188
+(flip)  |A|=7192
+|J|=9  |A|=7192
+(flip)  |A|=7195
+|J|=7  |A|=7195
+(flip)  |A|=7199
+|J|=5  |A|=7206
+|J|=0  |A|=7206
+    43
+
+|J|=2262  |A|=5427
+|J|=835  |A|=6892
+|J|=198  |A|=6892
+(flip)  |A|=7030
+|J|=146  |A|=7030
+(flip)  |A|=7034
+|J|=144  |A|=7034
+(flip)  |A|=7034
+|A|=7188
+|J|=41  |A|=7188
+(flip)  |A|=7194
+|J|=37  |A|=7198
+|J|=35  |A|=7201
+|J|=33  |A|=7201
+(flip)  |A|=7205
+|J|=31  |A|=7205
+(flip)  |A|=7210
+|J|=28  |A|=7215
+|J|=25  |A|=7215
+(flip)  |A|=7218
+|J|=23  |A|=7218
+(flip)  |A|=7224
+|J|=21  |A|=7229
+|J|=19  |A|=7231
+|J|=18  |A|=7231
+(flip)  |A|=7234
+|J|=16  |A|=7236
+|J|=15  |A|=7236
+(flip)  |A|=7243
+|J|=13  |A|=7248
+|J|=10  |A|=7252
+|J|=9  |A|=7252
+(flip)  |A|=7256
+|J|=7  |A|=7256
+(flip)  |A|=7260
+|J|=5  |A|=7264
+|J|=3  |A|=7264
+(flip)  |A|=7268
+|J|=0  |A|=7268
+    44
+
+|J|=2206  |A|=5451
+|J|=868  |A|=6932
+|J|=239  |A|=6932
+(flip)  |A|=7100
+|J|=179  |A|=7100
+(flip)  |A|=7113
+|J|=174  |A|=7113
+(flip)  |A|=7113
+|A|=7303
+|J|=55  |A|=7303
+(flip)  |A|=7307
+|J|=53  |A|=7311
+|J|=51  |A|=7314
+|J|=49  |A|=7316
+|J|=48  |A|=7326
+|J|=42  |A|=7326
+(flip)  |A|=7329
+|J|=40  |A|=7329
+(flip)  |A|=7333
+|J|=38  |A|=7333
+(flip)  |A|=7337
+|J|=36  |A|=7339
+|J|=34  |A|=7339
+(flip)  |A|=7343
+|J|=32  |A|=7343
+(flip)  |A|=7347
+|J|=30  |A|=7352
+|J|=27  |A|=7352
+(flip)  |A|=7358
+|J|=23  |A|=7358
+(flip)  |A|=7363
+|J|=20  |A|=7366
+|J|=18  |A|=7366
+(flip)  |A|=7370
+|J|=16  |A|=7370
+(flip)  |A|=7374
+|J|=14  |A|=7374
+(flip)  |A|=7381
+|J|=11  |A|=7384
+|J|=9  |A|=7387
+|J|=8  |A|=7387
+(flip)  |A|=7392
+|J|=5  |A|=7392
+(flip)  |A|=7396
+|J|=3  |A|=7396
+(flip)  |A|=7401
+|J|=1  |A|=7401
+(flip)  |A|=7408
+|J|=0  |A|=7408
+    45
+
+|J|=2336  |A|=5503
+|J|=912  |A|=7074
+|J|=230  |A|=7074
+(flip)  |A|=7223
+|J|=174  |A|=7223
+(flip)  |A|=7237
+|J|=170  |A|=7237
+(flip)  |A|=7237
+|A|=7415
+|J|=52  |A|=7420
+|J|=48  |A|=7423
+|J|=46  |A|=7423
+(flip)  |A|=7428
+|J|=43  |A|=7428
+(flip)  |A|=7436
+|J|=39  |A|=7436
+(flip)  |A|=7441
+|J|=36  |A|=7444
+|J|=34  |A|=7455
+|J|=30  |A|=7455
+(flip)  |A|=7460
+|J|=27  |A|=7460
+(flip)  |A|=7464
+|J|=25  |A|=7464
+(flip)  |A|=7468
+|J|=23  |A|=7473
+|J|=20  |A|=7473
+(flip)  |A|=7477
+|J|=17  |A|=7477
+(flip)  |A|=7483
+|J|=15  |A|=7483
+(flip)  |A|=7486
+|J|=14  |A|=7489
+|J|=12  |A|=7489
+(flip)  |A|=7492
+|J|=10  |A|=7492
+(flip)  |A|=7496
+|J|=7  |A|=7496
+(flip)  |A|=7500
+|J|=4  |A|=7500
+(flip)  |A|=7507
+|J|=2  |A|=7507
+(flip)  |A|=7511
+|J|=0  |A|=7511
+    46
+
+|J|=2306  |A|=5525
+|J|=932  |A|=7038
+|J|=260  |A|=7038
+(flip)  |A|=7188
+|J|=198  |A|=7188
+(flip)  |A|=7190
+|J|=197  |A|=7190
+(flip)  |A|=7190
+|A|=7395
+|J|=65  |A|=7407
+|J|=57  |A|=7411
+|J|=55  |A|=7411
+(flip)  |A|=7426
+|J|=45  |A|=7426
+(flip)  |A|=7432
+|J|=43  |A|=7432
+(flip)  |A|=7436
+|J|=41  |A|=7443
+|J|=38  |A|=7447
+|J|=36  |A|=7447
+(flip)  |A|=7452
+|J|=34  |A|=7457
+|J|=32  |A|=7457
+(flip)  |A|=7461
+|J|=30  |A|=7461
+(flip)  |A|=7463
+|J|=29  |A|=7467
+|J|=27  |A|=7467
+(flip)  |A|=7470
+|J|=25  |A|=7473
+|J|=23  |A|=7473
+(flip)  |A|=7476
+|J|=22  |A|=7480
+|J|=20  |A|=7480
+(flip)  |A|=7483
+|J|=19  |A|=7483
+(flip)  |A|=7486
+|J|=18  |A|=7486
+(flip)  |A|=7491
+|J|=16  |A|=7494
+|J|=14  |A|=7494
+(flip)  |A|=7498
+|J|=12  |A|=7498
+(flip)  |A|=7502
+|J|=9  |A|=7502
+(flip)  |A|=7506
+|J|=7  |A|=7509
+|J|=5  |A|=7511
+|J|=4  |A|=7518
+|J|=0  |A|=7518
+    47
+
+|J|=2350  |A|=5616
+|J|=950  |A|=7190
+|J|=243  |A|=7190
+(flip)  |A|=7347
+|J|=180  |A|=7347
+(flip)  |A|=7347
+|A|=7531
+|J|=60  |A|=7531
+(flip)  |A|=7546
+|J|=52  |A|=7551
+|J|=50  |A|=7558
+|J|=47  |A|=7564
+|J|=44  |A|=7564
+(flip)  |A|=7569
+|J|=42  |A|=7574
+|J|=39  |A|=7574
+(flip)  |A|=7578
+|J|=37  |A|=7582
+|J|=35  |A|=7589
+|J|=32  |A|=7589
+(flip)  |A|=7593
+|J|=30  |A|=7593
+(flip)  |A|=7595
+|J|=29  |A|=7598
+|J|=27  |A|=7601
+|J|=25  |A|=7605
+|J|=22  |A|=7609
+|J|=20  |A|=7613
+|J|=18  |A|=7616
+|J|=16  |A|=7619
+|J|=14  |A|=7619
+(flip)  |A|=7622
+|J|=12  |A|=7622
+(flip)  |A|=7624
+|J|=11  |A|=7628
+|J|=9  |A|=7628
+(flip)  |A|=7635
+|J|=4  |A|=7639
+|J|=2  |A|=7643
+|J|=0  |A|=7643
+    48
+
+|J|=2449  |A|=5681
+|J|=920  |A|=7150
+|J|=269  |A|=7150
+(flip)  |A|=7303
+|J|=213  |A|=7303
+(flip)  |A|=7308
+|J|=210  |A|=7308
+(flip)  |A|=7308
+|A|=7495
+|J|=88  |A|=7500
+|J|=86  |A|=7505
+|J|=82  |A|=7510
+|J|=80  |A|=7510
+(flip)  |A|=7514
+|J|=78  |A|=7514
+(flip)  |A|=7518
+|J|=75  |A|=7518
+(flip)  |A|=7523
+|J|=72  |A|=7527
+|J|=69  |A|=7527
+(flip)  |A|=7532
+|J|=67  |A|=7539
+|J|=62  |A|=7539
+(flip)  |A|=7544
+|J|=60  |A|=7547
+|J|=58  |A|=7547
+(flip)  |A|=7558
+|J|=52  |A|=7562
+|J|=50  |A|=7562
+(flip)  |A|=7568
+|J|=46  |A|=7571
+|J|=44  |A|=7571
+(flip)  |A|=7582
+|J|=37  |A|=7582
+(flip)  |A|=7595
+|J|=28  |A|=7599
+|J|=25  |A|=7602
+|J|=22  |A|=7608
+|J|=20  |A|=7608
+(flip)  |A|=7615
+|J|=17  |A|=7619
+|J|=15  |A|=7622
+|J|=13  |A|=7622
+(flip)  |A|=7626
+|J|=11  |A|=7626
+(flip)  |A|=7630
+|J|=9  |A|=7630
+(flip)  |A|=7634
+|J|=7  |A|=7634
+(flip)  |A|=7638
+|J|=5  |A|=7638
+(flip)  |A|=7642
+|J|=3  |A|=7645
+|J|=1  |A|=7645
+(flip)  |A|=7649
+|J|=0  |A|=7649
+    49
+
+|J|=2480  |A|=5846
+|J|=875  |A|=7334
+|J|=212  |A|=7334
+(flip)  |A|=7461
+|J|=164  |A|=7461
+(flip)  |A|=7461
+|A|=7636
+|J|=47  |A|=7636
+(flip)  |A|=7644
+|J|=43  |A|=7652
+|J|=38  |A|=7660
+|J|=34  |A|=7663
+|J|=32  |A|=7668
+|J|=30  |A|=7668
+(flip)  |A|=7673
+|J|=28  |A|=7673
+(flip)  |A|=7676
+|J|=26  |A|=7684
+|J|=22  |A|=7688
+|J|=20  |A|=7688
+(flip)  |A|=7692
+|J|=18  |A|=7696
+|J|=16  |A|=7700
+|J|=13  |A|=7704
+|J|=10  |A|=7708
+|J|=8  |A|=7708
+(flip)  |A|=7715
+|J|=4  |A|=7719
+|J|=2  |A|=7723
+|J|=0  |A|=7723
+    50
+
+|J|=2513  |A|=5796
+|J|=956  |A|=7308
+|J|=257  |A|=7308
+(flip)  |A|=7429
+|J|=207  |A|=7429
+(flip)  |A|=7429
+|A|=7633
+|J|=75  |A|=7649
+|J|=66  |A|=7653
+|J|=63  |A|=7653
+(flip)  |A|=7662
+|J|=57  |A|=7667
+|J|=54  |A|=7674
+|J|=51  |A|=7674
+(flip)  |A|=7678
+|J|=49  |A|=7678
+(flip)  |A|=7681
+|J|=48  |A|=7685
+|J|=45  |A|=7690
+|J|=43  |A|=7690
+(flip)  |A|=7695
+|J|=39  |A|=7698
+|J|=37  |A|=7698
+(flip)  |A|=7702
+|J|=35  |A|=7702
+(flip)  |A|=7708
+|J|=31  |A|=7715
+|J|=28  |A|=7723
+|J|=25  |A|=7723
+(flip)  |A|=7727
+|J|=23  |A|=7730
+|J|=21  |A|=7733
+|J|=19  |A|=7737
+|J|=17  |A|=7737
+(flip)  |A|=7744
+|J|=15  |A|=7748
+|J|=13  |A|=7752
+|J|=11  |A|=7756
+|J|=9  |A|=7760
+|J|=7  |A|=7764
+|J|=5  |A|=7764
+(flip)  |A|=7771
+|J|=2  |A|=7775
+|J|=0  |A|=7775
+    51
+
+|J|=2591  |A|=6007
+|J|=909  |A|=7370
+|J|=264  |A|=7370
+(flip)  |A|=7501
+|J|=213  |A|=7501
+(flip)  |A|=7501
+|A|=7724
+|J|=67  |A|=7724
+(flip)  |A|=7732
+|J|=62  |A|=7738
+|J|=58  |A|=7738
+(flip)  |A|=7742
+|J|=56  |A|=7747
+|J|=53  |A|=7755
+|J|=50  |A|=7758
+|J|=48  |A|=7762
+|J|=45  |A|=7762
+(flip)  |A|=7764
+|J|=44  |A|=7764
+(flip)  |A|=7769
+|J|=41  |A|=7771
+|J|=40  |A|=7775
+|J|=37  |A|=7779
+|J|=34  |A|=7779
+(flip)  |A|=7782
+|J|=32  |A|=7789
+|J|=29  |A|=7793
+|J|=26  |A|=7797
+|J|=24  |A|=7802
+|J|=22  |A|=7809
+|J|=18  |A|=7813
+|J|=17  |A|=7816
+|J|=15  |A|=7819
+|J|=13  |A|=7828
+|J|=8  |A|=7830
+|J|=6  |A|=7834
+|J|=4  |A|=7839
+|J|=2  |A|=7843
+|J|=0  |A|=7843
+    52
+
+|J|=2659  |A|=6027
+|J|=949  |A|=7473
+|J|=274  |A|=7473
+(flip)  |A|=7594
+|J|=222  |A|=7594
+(flip)  |A|=7594
+|A|=7802
+|J|=86  |A|=7817
+|J|=78  |A|=7817
+(flip)  |A|=7827
+|J|=74  |A|=7831
+|J|=72  |A|=7831
+(flip)  |A|=7835
+|J|=70  |A|=7838
+|J|=68  |A|=7842
+|J|=66  |A|=7842
+(flip)  |A|=7845
+|J|=64  |A|=7845
+(flip)  |A|=7852
+|J|=61  |A|=7857
+|J|=58  |A|=7865
+|J|=54  |A|=7865
+(flip)  |A|=7869
+|J|=52  |A|=7872
+|J|=50  |A|=7872
+(flip)  |A|=7876
+|J|=48  |A|=7879
+|J|=46  |A|=7879
+(flip)  |A|=7882
+|J|=44  |A|=7882
+(flip)  |A|=7885
+|J|=42  |A|=7890
+|J|=40  |A|=7890
+(flip)  |A|=7894
+|J|=37  |A|=7894
+(flip)  |A|=7898
+|J|=35  |A|=7898
+(flip)  |A|=7901
+|J|=33  |A|=7905
+|J|=31  |A|=7908
+|J|=29  |A|=7911
+|J|=27  |A|=7914
+|J|=26  |A|=7918
+|J|=23  |A|=7922
+|J|=20  |A|=7924
+|J|=19  |A|=7924
+(flip)  |A|=7928
+|J|=16  |A|=7932
+|J|=14  |A|=7932
+(flip)  |A|=7939
+|J|=11  |A|=7943
+|J|=8  |A|=7947
+|J|=6  |A|=7949
+|J|=5  |A|=7953
+|J|=3  |A|=7953
+(flip)  |A|=7957
+|J|=1  |A|=7959
+|J|=0  |A|=7959
+    53
+
+|J|=2702  |A|=6011
+|J|=969  |A|=7533
+|J|=253  |A|=7533
+(flip)  |A|=7690
+|J|=190  |A|=7690
+(flip)  |A|=7690
+|A|=7890
+|J|=60  |A|=7890
+(flip)  |A|=7902
+|J|=52  |A|=7902
+(flip)  |A|=7911
+|J|=46  |A|=7916
+|J|=43  |A|=7920
+|J|=41  |A|=7925
+|J|=39  |A|=7925
+(flip)  |A|=7929
+|J|=37  |A|=7932
+|J|=35  |A|=7938
+|J|=33  |A|=7938
+(flip)  |A|=7942
+|J|=31  |A|=7947
+|J|=29  |A|=7951
+|J|=27  |A|=7964
+|J|=20  |A|=7969
+|J|=18  |A|=7969
+(flip)  |A|=7971
+|J|=17  |A|=7975
+|J|=15  |A|=7978
+|J|=13  |A|=7982
+|J|=11  |A|=7986
+|J|=9  |A|=7991
+|J|=5  |A|=7995
+|J|=3  |A|=7995
+(flip)  |A|=7999
+|J|=0  |A|=7999
+    54
+
+|J|=2722  |A|=6186
+|J|=919  |A|=7601
+|J|=264  |A|=7601
+(flip)  |A|=7702
+|J|=226  |A|=7702
+(flip)  |A|=7702
+|A|=7948
+|J|=62  |A|=7948
+(flip)  |A|=7961
+|J|=54  |A|=7966
+|J|=52  |A|=7974
+|J|=46  |A|=7977
+|J|=44  |A|=7980
+|J|=42  |A|=7980
+(flip)  |A|=7984
+|J|=40  |A|=7987
+|J|=38  |A|=7990
+|J|=36  |A|=7990
+(flip)  |A|=7994
+|J|=34  |A|=7996
+|J|=33  |A|=8004
+|J|=29  |A|=8008
+|J|=26  |A|=8008
+(flip)  |A|=8012
+|J|=23  |A|=8012
+(flip)  |A|=8017
+|J|=21  |A|=8020
+|J|=19  |A|=8020
+(flip)  |A|=8022
+|J|=18  |A|=8026
+|J|=15  |A|=8030
+|J|=12  |A|=8035
+|J|=9  |A|=8037
+|J|=8  |A|=8041
+|J|=6  |A|=8045
+|J|=4  |A|=8049
+|J|=2  |A|=8055
+|J|=0  |A|=8055
+    55
+
+|J|=2779  |A|=6284
+|J|=973  |A|=7702
+|J|=289  |A|=7702
+(flip)  |A|=7804
+|J|=241  |A|=7806
+|J|=240  |A|=7806
+(flip)  |A|=7810
+|J|=238  |A|=7810
+(flip)  |A|=7810
+|A|=8038
+|J|=88  |A|=8038
+(flip)  |A|=8041
+|J|=86  |A|=8044
+|J|=84  |A|=8044
+(flip)  |A|=8047
+|J|=82  |A|=8051
+|J|=80  |A|=8051
+(flip)  |A|=8054
+|J|=78  |A|=8057
+|J|=76  |A|=8063
+|J|=74  |A|=8063
+(flip)  |A|=8071
+|J|=72  |A|=8071
+(flip)  |A|=8081
+|J|=68  |A|=8086
+|J|=65  |A|=8091
+|J|=61  |A|=8091
+(flip)  |A|=8095
+|J|=59  |A|=8095
+(flip)  |A|=8100
+|J|=56  |A|=8103
+|J|=54  |A|=8103
+(flip)  |A|=8106
+|J|=52  |A|=8106
+(flip)  |A|=8114
+|J|=49  |A|=8118
+|J|=47  |A|=8118
+(flip)  |A|=8122
+|J|=45  |A|=8126
+|J|=43  |A|=8131
+|J|=39  |A|=8135
+|J|=37  |A|=8139
+|J|=35  |A|=8142
+|J|=32  |A|=8142
+(flip)  |A|=8146
+|J|=30  |A|=8146
+(flip)  |A|=8150
+|J|=28  |A|=8153
+|J|=25  |A|=8153
+(flip)  |A|=8157
+|J|=23  |A|=8157
+(flip)  |A|=8161
+|J|=21  |A|=8161
+(flip)  |A|=8165
+|J|=18  |A|=8167
+|J|=16  |A|=8167
+(flip)  |A|=8170
+|J|=14  |A|=8170
+(flip)  |A|=8174
+|J|=11  |A|=8174
+(flip)  |A|=8179
+|J|=9  |A|=8186
+|J|=6  |A|=8186
+(flip)  |A|=8190
+|J|=4  |A|=8190
+(flip)  |A|=8194
+|J|=2  |A|=8194
+(flip)  |A|=8198
+|J|=0  |A|=8198
+    56
+
+|J|=2856  |A|=6339
+|J|=972  |A|=7751
+|J|=276  |A|=7751
+(flip)  |A|=7870
+|J|=224  |A|=7870
+(flip)  |A|=7873
+|J|=222  |A|=7873
+(flip)  |A|=7873
+|A|=8081
+|J|=82  |A|=8081
+(flip)  |A|=8094
+|J|=74  |A|=8098
+|J|=72  |A|=8102
+|J|=70  |A|=8102
+(flip)  |A|=8105
+|J|=68  |A|=8105
+(flip)  |A|=8112
+|J|=64  |A|=8112
+(flip)  |A|=8117
+|J|=61  |A|=8117
+(flip)  |A|=8125
+|J|=56  |A|=8125
+(flip)  |A|=8129
+|J|=53  |A|=8129
+(flip)  |A|=8134
+|J|=51  |A|=8142
+|J|=46  |A|=8142
+(flip)  |A|=8145
+|J|=44  |A|=8145
+(flip)  |A|=8149
+|J|=41  |A|=8149
+(flip)  |A|=8157
+|J|=36  |A|=8157
+(flip)  |A|=8161
+|J|=34  |A|=8161
+(flip)  |A|=8164
+|J|=32  |A|=8166
+|J|=31  |A|=8170
+|J|=29  |A|=8170
+(flip)  |A|=8173
+|J|=28  |A|=8176
+|J|=25  |A|=8179
+|J|=22  |A|=8179
+(flip)  |A|=8183
+|J|=20  |A|=8186
+|J|=18  |A|=8188
+|J|=17  |A|=8195
+|J|=13  |A|=8198
+|J|=11  |A|=8198
+(flip)  |A|=8202
+|J|=9  |A|=8205
+|J|=7  |A|=8205
+(flip)  |A|=8209
+|J|=4  |A|=8209
+(flip)  |A|=8213
+|J|=2  |A|=8216
+|J|=0  |A|=8216
+    57
+
+|J|=2873  |A|=6420
+|J|=926  |A|=7692
+|J|=298  |A|=7692
+(flip)  |A|=7821
+|J|=242  |A|=7821
+(flip)  |A|=7823
+|J|=241  |A|=7823
+(flip)  |A|=7823
+|A|=8067
+|J|=78  |A|=8075
+|J|=73  |A|=8075
+(flip)  |A|=8080
+|J|=71  |A|=8084
+|J|=68  |A|=8084
+(flip)  |A|=8090
+|J|=64  |A|=8090
+(flip)  |A|=8098
+|J|=60  |A|=8098
+(flip)  |A|=8102
+|J|=58  |A|=8102
+(flip)  |A|=8108
+|J|=56  |A|=8113
+|J|=52  |A|=8118
+|J|=49  |A|=8121
+|J|=47  |A|=8121
+(flip)  |A|=8124
+|J|=46  |A|=8128
+|J|=44  |A|=8128
+(flip)  |A|=8141
+|J|=39  |A|=8141
+(flip)  |A|=8153
+|J|=32  |A|=8157
+|J|=30  |A|=8157
+(flip)  |A|=8166
+|J|=25  |A|=8169
+|J|=22  |A|=8169
+(flip)  |A|=8173
+|J|=20  |A|=8173
+(flip)  |A|=8177
+|J|=18  |A|=8177
+(flip)  |A|=8181
+|J|=15  |A|=8181
+(flip)  |A|=8185
+|J|=13  |A|=8185
+(flip)  |A|=8189
+|J|=11  |A|=8189
+(flip)  |A|=8193
+|J|=9  |A|=8193
+(flip)  |A|=8197
+|J|=7  |A|=8197
+(flip)  |A|=8201
+|J|=5  |A|=8201
+(flip)  |A|=8205
+|J|=2  |A|=8205
+(flip)  |A|=8209
+|J|=0  |A|=8209
+    58
+
+|J|=2935  |A|=6439
+|J|=908  |A|=7782
+|J|=271  |A|=7782
+(flip)  |A|=7893
+|J|=222  |A|=7893
+(flip)  |A|=7895
+|J|=221  |A|=7895
+(flip)  |A|=7895
+|A|=8120
+|J|=76  |A|=8127
+|J|=72  |A|=8127
+(flip)  |A|=8133
+|J|=68  |A|=8137
+|J|=66  |A|=8137
+(flip)  |A|=8142
+|J|=64  |A|=8142
+(flip)  |A|=8147
+|J|=62  |A|=8149
+|J|=61  |A|=8149
+(flip)  |A|=8153
+|J|=59  |A|=8153
+(flip)  |A|=8161
+|J|=54  |A|=8164
+|J|=52  |A|=8164
+(flip)  |A|=8168
+|J|=50  |A|=8172
+|J|=48  |A|=8176
+|J|=46  |A|=8176
+(flip)  |A|=8180
+|J|=44  |A|=8182
+|J|=42  |A|=8182
+(flip)  |A|=8191
+|J|=37  |A|=8195
+|J|=35  |A|=8195
+(flip)  |A|=8208
+|J|=29  |A|=8208
+(flip)  |A|=8212
+|J|=26  |A|=8216
+|J|=23  |A|=8219
+|J|=21  |A|=8219
+(flip)  |A|=8223
+|J|=19  |A|=8223
+(flip)  |A|=8227
+|J|=17  |A|=8227
+(flip)  |A|=8231
+|J|=15  |A|=8231
+(flip)  |A|=8235
+|J|=13  |A|=8238
+|J|=11  |A|=8240
+|J|=10  |A|=8240
+(flip)  |A|=8244
+|J|=7  |A|=8244
+(flip)  |A|=8248
+|J|=5  |A|=8248
+(flip)  |A|=8252
+|J|=3  |A|=8252
+(flip)  |A|=8256
+|J|=1  |A|=8256
+(flip)  |A|=8258
+|J|=0  |A|=8258
+    59
+
+|J|=2993  |A|=6440
+|J|=1006  |A|=7815
+|J|=320  |A|=7815
+(flip)  |A|=7961
+|J|=259  |A|=7961
+(flip)  |A|=7964
+|J|=258  |A|=7964
+(flip)  |A|=7964
+|A|=8237
+|J|=76  |A|=8237
+(flip)  |A|=8243
+|J|=72  |A|=8246
+|J|=70  |A|=8246
+(flip)  |A|=8250
+|J|=67  |A|=8254
+|J|=65  |A|=8263
+|J|=61  |A|=8268
+|J|=58  |A|=8271
+|J|=56  |A|=8271
+(flip)  |A|=8273
+|J|=55  |A|=8273
+(flip)  |A|=8277
+|J|=53  |A|=8281
+|J|=51  |A|=8285
+|J|=48  |A|=8285
+(flip)  |A|=8294
+|J|=45  |A|=8297
+|J|=42  |A|=8302
+|J|=39  |A|=8306
+|J|=36  |A|=8306
+(flip)  |A|=8310
+|J|=33  |A|=8313
+|J|=31  |A|=8313
+(flip)  |A|=8317
+|J|=29  |A|=8320
+|J|=26  |A|=8320
+(flip)  |A|=8324
+|J|=23  |A|=8324
+(flip)  |A|=8328
+|J|=21  |A|=8328
+(flip)  |A|=8332
+|J|=18  |A|=8335
+|J|=16  |A|=8337
+|J|=15  |A|=8337
+(flip)  |A|=8341
+|J|=13  |A|=8341
+(flip)  |A|=8344
+|J|=12  |A|=8344
+(flip)  |A|=8348
+|J|=10  |A|=8355
+|J|=5  |A|=8355
+(flip)  |A|=8359
+|J|=3  |A|=8363
+|J|=1  |A|=8363
+(flip)  |A|=8365
+|J|=0  |A|=8365
+    60
+
+|J|=3023  |A|=6643
+|J|=908  |A|=7887
+|J|=291  |A|=7887
+(flip)  |A|=8003
+|J|=245  |A|=8003
+(flip)  |A|=8003
+|A|=8227
+|J|=97  |A|=8227
+(flip)  |A|=8243
+|J|=88  |A|=8243
+(flip)  |A|=8248
+|J|=84  |A|=8254
+|J|=80  |A|=8254
+(flip)  |A|=8259
+|J|=76  |A|=8265
+|J|=72  |A|=8272
+|J|=68  |A|=8272
+(flip)  |A|=8277
+|J|=65  |A|=8277
+(flip)  |A|=8282
+|J|=63  |A|=8284
+|J|=62  |A|=8284
+(flip)  |A|=8288
+|J|=60  |A|=8288
+(flip)  |A|=8291
+|J|=58  |A|=8295
+|J|=55  |A|=8295
+(flip)  |A|=8298
+|J|=53  |A|=8305
+|J|=49  |A|=8313
+|J|=43  |A|=8313
+(flip)  |A|=8317
+|J|=41  |A|=8317
+(flip)  |A|=8321
+|J|=39  |A|=8321
+(flip)  |A|=8326
+|J|=35  |A|=8329
+|J|=33  |A|=8329
+(flip)  |A|=8331
+|J|=32  |A|=8338
+|J|=29  |A|=8341
+|J|=27  |A|=8344
+|J|=25  |A|=8348
+|J|=22  |A|=8351
+|J|=20  |A|=8354
+|J|=18  |A|=8358
+|J|=16  |A|=8362
+|J|=14  |A|=8362
+(flip)  |A|=8366
+|J|=12  |A|=8370
+|J|=10  |A|=8375
+|J|=8  |A|=8380
+|J|=6  |A|=8384
+|J|=3  |A|=8384
+(flip)  |A|=8388
+|J|=0  |A|=8388
+    61
+
+|J|=3026  |A|=6631
+|J|=976  |A|=7954
+|J|=319  |A|=7954
+(flip)  |A|=8089
+|J|=258  |A|=8089
+(flip)  |A|=8089
+|A|=8348
+|J|=88  |A|=8348
+(flip)  |A|=8356
+|J|=83  |A|=8360
+|J|=81  |A|=8372
+|J|=74  |A|=8372
+(flip)  |A|=8376
+|J|=72  |A|=8383
+|J|=66  |A|=8383
+(flip)  |A|=8388
+|J|=64  |A|=8391
+|J|=62  |A|=8396
+|J|=58  |A|=8396
+(flip)  |A|=8400
+|J|=56  |A|=8404
+|J|=53  |A|=8408
+|J|=50  |A|=8412
+|J|=48  |A|=8415
+|J|=46  |A|=8415
+(flip)  |A|=8423
+|J|=42  |A|=8423
+(flip)  |A|=8426
+|J|=40  |A|=8430
+|J|=38  |A|=8435
+|J|=36  |A|=8435
+(flip)  |A|=8439
+|J|=34  |A|=8443
+|J|=31  |A|=8443
+(flip)  |A|=8448
+|J|=28  |A|=8451
+|J|=25  |A|=8451
+(flip)  |A|=8454
+|J|=23  |A|=8457
+|J|=21  |A|=8461
+|J|=19  |A|=8465
+|J|=16  |A|=8469
+|J|=14  |A|=8473
+|J|=11  |A|=8477
+|J|=8  |A|=8484
+|J|=4  |A|=8488
+|J|=1  |A|=8490
+|J|=0  |A|=8490
+    62
+
+|J|=3136  |A|=6723
+|J|=949  |A|=8017
+|J|=290  |A|=8019
+|J|=289  |A|=8019
+(flip)  |A|=8142
+|J|=231  |A|=8142
+(flip)  |A|=8142
+|A|=8403
+|J|=58  |A|=8403
+(flip)  |A|=8415
+|J|=50  |A|=8418
+|J|=48  |A|=8418
+(flip)  |A|=8423
+|J|=46  |A|=8427
+|J|=44  |A|=8427
+(flip)  |A|=8432
+|J|=40  |A|=8435
+|J|=38  |A|=8442
+|J|=36  |A|=8446
+|J|=33  |A|=8446
+(flip)  |A|=8449
+|J|=31  |A|=8463
+|J|=22  |A|=8467
+|J|=20  |A|=8467
+(flip)  |A|=8470
+|J|=18  |A|=8473
+|J|=15  |A|=8476
+|J|=12  |A|=8480
+|J|=9  |A|=8480
+(flip)  |A|=8483
+|J|=7  |A|=8487
+|J|=5  |A|=8491
+|J|=3  |A|=8494
+|J|=2  |A|=8498
+|J|=0  |A|=8498
+    63
+
+|J|=3176  |A|=6821
+|J|=894  |A|=8022
+|J|=290  |A|=8027
+|J|=287  |A|=8027
+(flip)  |A|=8143
+|J|=239  |A|=8143
+(flip)  |A|=8149
+|J|=237  |A|=8149
+(flip)  |A|=8149
+|A|=8394
+|J|=75  |A|=8403
+|J|=70  |A|=8403
+(flip)  |A|=8412
+|J|=65  |A|=8415
+|J|=63  |A|=8420
+|J|=60  |A|=8427
+|J|=56  |A|=8427
+(flip)  |A|=8432
+|J|=53  |A|=8437
+|J|=49  |A|=8437
+(flip)  |A|=8441
+|J|=46  |A|=8441
+(flip)  |A|=8445
+|J|=44  |A|=8450
+|J|=40  |A|=8450
+(flip)  |A|=8454
+|J|=38  |A|=8454
+(flip)  |A|=8462
+|J|=34  |A|=8462
+(flip)  |A|=8466
+|J|=32  |A|=8466
+(flip)  |A|=8479
+|J|=24  |A|=8483
+|J|=21  |A|=8483
+(flip)  |A|=8487
+|J|=18  |A|=8491
+|J|=15  |A|=8494
+|J|=13  |A|=8494
+(flip)  |A|=8498
+|J|=10  |A|=8505
+|J|=6  |A|=8508
+|J|=4  |A|=8512
+|J|=1  |A|=8512
+(flip)  |A|=8514
+|J|=0  |A|=8514
+    64
+
+|J|=3215  |A|=6771
+|J|=988  |A|=8058
+|J|=311  |A|=8058
+(flip)  |A|=8169
+|J|=263  |A|=8169
+(flip)  |A|=8171
+|J|=262  |A|=8171
+(flip)  |A|=8171
+|A|=8448
+|J|=78  |A|=8461
+|J|=70  |A|=8468
+|J|=68  |A|=8468
+(flip)  |A|=8475
+|J|=63  |A|=8475
+(flip)  |A|=8485
+|J|=56  |A|=8485
+(flip)  |A|=8490
+|J|=54  |A|=8490
+(flip)  |A|=8493
+|J|=52  |A|=8493
+(flip)  |A|=8498
+|J|=50  |A|=8498
+(flip)  |A|=8503
+|J|=47  |A|=8508
+|J|=43  |A|=8511
+|J|=41  |A|=8515
+|J|=39  |A|=8520
+|J|=36  |A|=8522
+|J|=35  |A|=8526
+|J|=33  |A|=8526
+(flip)  |A|=8531
+|J|=31  |A|=8536
+|J|=28  |A|=8536
+(flip)  |A|=8543
+|J|=24  |A|=8543
+(flip)  |A|=8547
+|J|=22  |A|=8547
+(flip)  |A|=8551
+|J|=20  |A|=8554
+|J|=17  |A|=8557
+|J|=15  |A|=8557
+(flip)  |A|=8561
+|J|=13  |A|=8561
+(flip)  |A|=8565
+|J|=11  |A|=8568
+|J|=9  |A|=8568
+(flip)  |A|=8573
+|J|=5  |A|=8573
+(flip)  |A|=8577
+|J|=3  |A|=8581
+|J|=0  |A|=8581
+    65
+
+|J|=3325  |A|=6895
+|J|=982  |A|=8207
+|J|=299  |A|=8207
+(flip)  |A|=8322
+|J|=254  |A|=8322
+(flip)  |A|=8322
+|A|=8582
+|J|=80  |A|=8582
+(flip)  |A|=8596
+|J|=72  |A|=8596
+(flip)  |A|=8602
+|J|=69  |A|=8608
+|J|=65  |A|=8613
+|J|=61  |A|=8618
+|J|=58  |A|=8618
+(flip)  |A|=8621
+|J|=56  |A|=8621
+(flip)  |A|=8626
+|J|=53  |A|=8626
+(flip)  |A|=8633
+|J|=50  |A|=8633
+(flip)  |A|=8638
+|J|=47  |A|=8642
+|J|=45  |A|=8642
+(flip)  |A|=8646
+|J|=43  |A|=8652
+|J|=39  |A|=8659
+|J|=35  |A|=8659
+(flip)  |A|=8663
+|J|=33  |A|=8667
+|J|=30  |A|=8670
+|J|=29  |A|=8673
+|J|=28  |A|=8676
+|J|=26  |A|=8679
+|J|=23  |A|=8682
+|J|=20  |A|=8686
+|J|=17  |A|=8690
+|J|=15  |A|=8694
+|J|=13  |A|=8698
+|J|=10  |A|=8698
+(flip)  |A|=8702
+|J|=8  |A|=8707
+|J|=4  |A|=8711
+|J|=2  |A|=8715
+|J|=0  |A|=8715
+    66
+
+|J|=3361  |A|=7027
+|J|=921  |A|=8281
+|J|=270  |A|=8281
+(flip)  |A|=8382
+|J|=229  |A|=8382
+(flip)  |A|=8386
+|J|=227  |A|=8386
+(flip)  |A|=8386
+|A|=8622
+|J|=72  |A|=8622
+(flip)  |A|=8631
+|J|=66  |A|=8635
+|J|=64  |A|=8638
+|J|=62  |A|=8638
+(flip)  |A|=8643
+|J|=58  |A|=8643
+(flip)  |A|=8648
+|J|=55  |A|=8653
+|J|=52  |A|=8657
+|J|=50  |A|=8660
+|J|=48  |A|=8660
+(flip)  |A|=8663
+|J|=46  |A|=8663
+(flip)  |A|=8671
+|J|=41  |A|=8671
+(flip)  |A|=8679
+|J|=36  |A|=8679
+(flip)  |A|=8683
+|J|=34  |A|=8683
+(flip)  |A|=8689
+|J|=31  |A|=8692
+|J|=29  |A|=8692
+(flip)  |A|=8696
+|J|=26  |A|=8699
+|J|=24  |A|=8699
+(flip)  |A|=8703
+|J|=21  |A|=8703
+(flip)  |A|=8707
+|J|=19  |A|=8707
+(flip)  |A|=8711
+|J|=17  |A|=8711
+(flip)  |A|=8715
+|J|=15  |A|=8717
+|J|=13  |A|=8720
+|J|=11  |A|=8724
+|J|=8  |A|=8724
+(flip)  |A|=8728
+|J|=6  |A|=8728
+(flip)  |A|=8732
+|J|=4  |A|=8736
+|J|=1  |A|=8736
+(flip)  |A|=8738
+|J|=0  |A|=8738
+    67
+
+|J|=3368  |A|=7136
+|J|=884  |A|=8298
+|J|=265  |A|=8298
+(flip)  |A|=8433
+|J|=207  |A|=8433
+(flip)  |A|=8435
+|J|=206  |A|=8435
+(flip)  |A|=8435
+|A|=8636
+|J|=74  |A|=8644
+|J|=69  |A|=8644
+(flip)  |A|=8651
+|J|=65  |A|=8651
+(flip)  |A|=8655
+|J|=62  |A|=8665
+|J|=56  |A|=8670
+|J|=54  |A|=8670
+(flip)  |A|=8674
+|J|=51  |A|=8674
+(flip)  |A|=8678
+|J|=49  |A|=8681
+|J|=47  |A|=8684
+|J|=45  |A|=8684
+(flip)  |A|=8692
+|J|=39  |A|=8696
+|J|=37  |A|=8696
+(flip)  |A|=8700
+|J|=35  |A|=8700
+(flip)  |A|=8705
+|J|=32  |A|=8708
+|J|=30  |A|=8711
+|J|=28  |A|=8711
+(flip)  |A|=8715
+|J|=26  |A|=8715
+(flip)  |A|=8719
+|J|=24  |A|=8719
+(flip)  |A|=8723
+|J|=21  |A|=8723
+(flip)  |A|=8727
+|J|=19  |A|=8727
+(flip)  |A|=8731
+|J|=16  |A|=8731
+(flip)  |A|=8734
+|J|=14  |A|=8734
+(flip)  |A|=8738
+|J|=11  |A|=8738
+(flip)  |A|=8742
+|J|=9  |A|=8749
+|J|=7  |A|=8749
+(flip)  |A|=8753
+|J|=4  |A|=8753
+(flip)  |A|=8757
+|J|=2  |A|=8757
+(flip)  |A|=8762
+|J|=0  |A|=8762
+    68
+
+|J|=3452  |A|=7208
+|J|=881  |A|=8348
+|J|=271  |A|=8348
+(flip)  |A|=8429
+|J|=237  |A|=8429
+(flip)  |A|=8429
+|A|=8678
+|J|=73  |A|=8687
+|J|=67  |A|=8687
+(flip)  |A|=8697
+|J|=63  |A|=8701
+|J|=60  |A|=8705
+|J|=58  |A|=8708
+|J|=56  |A|=8711
+|J|=54  |A|=8711
+(flip)  |A|=8718
+|J|=51  |A|=8723
+|J|=49  |A|=8730
+|J|=47  |A|=8730
+(flip)  |A|=8735
+|J|=43  |A|=8737
+|J|=41  |A|=8740
+|J|=39  |A|=8740
+(flip)  |A|=8743
+|J|=37  |A|=8749
+|J|=34  |A|=8754
+|J|=30  |A|=8757
+|J|=28  |A|=8757
+(flip)  |A|=8760
+|J|=26  |A|=8766
+|J|=24  |A|=8771
+|J|=21  |A|=8774
+|J|=18  |A|=8778
+|J|=15  |A|=8782
+|J|=13  |A|=8785
+|J|=11  |A|=8789
+|J|=9  |A|=8793
+|J|=7  |A|=8797
+|J|=5  |A|=8801
+|J|=3  |A|=8801
+(flip)  |A|=8804
+|J|=1  |A|=8804
+(flip)  |A|=8806
+|J|=0  |A|=8806
+    69
+
+|J|=3473  |A|=7206
+|J|=968  |A|=8395
+|J|=310  |A|=8395
+(flip)  |A|=8464
+|J|=280  |A|=8464
+(flip)  |A|=8464
+|A|=8768
+|J|=78  |A|=8768
+(flip)  |A|=8776
+|J|=75  |A|=8789
+|J|=67  |A|=8794
+|J|=64  |A|=8794
+(flip)  |A|=8798
+|J|=62  |A|=8801
+|J|=60  |A|=8804
+|J|=58  |A|=8811
+|J|=55  |A|=8817
+|J|=53  |A|=8817
+(flip)  |A|=8824
+|J|=47  |A|=8827
+|J|=45  |A|=8827
+(flip)  |A|=8830
+|J|=43  |A|=8833
+|J|=42  |A|=8837
+|J|=39  |A|=8837
+(flip)  |A|=8839
+|J|=38  |A|=8843
+|J|=35  |A|=8843
+(flip)  |A|=8848
+|J|=32  |A|=8853
+|J|=29  |A|=8853
+(flip)  |A|=8858
+|J|=25  |A|=8861
+|J|=23  |A|=8864
+|J|=21  |A|=8867
+|J|=18  |A|=8871
+|J|=15  |A|=8875
+|J|=12  |A|=8879
+|J|=9  |A|=8883
+|J|=6  |A|=8890
+|J|=1  |A|=8893
+|J|=0  |A|=8893
+    70
+
+|J|=3540  |A|=7297
+|J|=921  |A|=8470
+|J|=286  |A|=8470
+(flip)  |A|=8579
+|J|=239  |A|=8579
+(flip)  |A|=8586
+|J|=236  |A|=8586
+(flip)  |A|=8586
+|A|=8856
+|J|=56  |A|=8863
+|J|=51  |A|=8863
+(flip)  |A|=8868
+|J|=48  |A|=8876
+|J|=42  |A|=8881
+|J|=39  |A|=8881
+(flip)  |A|=8885
+|J|=36  |A|=8890
+|J|=33  |A|=8894
+|J|=31  |A|=8897
+|J|=29  |A|=8897
+(flip)  |A|=8901
+|J|=27  |A|=8905
+|J|=25  |A|=8908
+|J|=23  |A|=8911
+|J|=22  |A|=8914
+|J|=20  |A|=8914
+(flip)  |A|=8918
+|J|=17  |A|=8921
+|J|=15  |A|=8924
+|J|=12  |A|=8924
+(flip)  |A|=8927
+|J|=11  |A|=8927
+(flip)  |A|=8930
+|J|=10  |A|=8932
+|J|=8  |A|=8932
+(flip)  |A|=8935
+|J|=6  |A|=8939
+|J|=4  |A|=8939
+(flip)  |A|=8943
+|J|=2  |A|=8943
+(flip)  |A|=8947
+|J|=0  |A|=8947
+    71
+
+|J|=3566  |A|=7413
+|J|=894  |A|=8562
+|J|=266  |A|=8562
+(flip)  |A|=8668
+|J|=208  |A|=8668
+(flip)  |A|=8668
+|A|=8893
+|J|=57  |A|=8900
+|J|=53  |A|=8900
+(flip)  |A|=8910
+|J|=47  |A|=8919
+|J|=40  |A|=8923
+|J|=38  |A|=8927
+|J|=35  |A|=8930
+|J|=33  |A|=8934
+|J|=30  |A|=8934
+(flip)  |A|=8937
+|J|=28  |A|=8937
+(flip)  |A|=8942
+|J|=25  |A|=8942
+(flip)  |A|=8947
+|J|=22  |A|=8950
+|J|=19  |A|=8953
+|J|=17  |A|=8956
+|J|=14  |A|=8960
+|J|=12  |A|=8965
+|J|=9  |A|=8969
+|J|=6  |A|=8973
+|J|=4  |A|=8980
+|J|=1  |A|=8983
+|J|=0  |A|=8983
+    72
+
+|J|=3664  |A|=7401
+|J|=935  |A|=8581
+|J|=279  |A|=8581
+(flip)  |A|=8664
+|J|=239  |A|=8664
+(flip)  |A|=8667
+|J|=238  |A|=8667
+(flip)  |A|=8667
+|A|=8908
+|J|=77  |A|=8908
+(flip)  |A|=8929
+|J|=62  |A|=8932
+|J|=60  |A|=8938
+|J|=56  |A|=8938
+(flip)  |A|=8943
+|J|=52  |A|=8943
+(flip)  |A|=8950
+|J|=47  |A|=8950
+(flip)  |A|=8954
+|J|=44  |A|=8959
+|J|=40  |A|=8962
+|J|=38  |A|=8962
+(flip)  |A|=8966
+|J|=35  |A|=8966
+(flip)  |A|=8972
+|J|=32  |A|=8975
+|J|=30  |A|=8975
+(flip)  |A|=8981
+|J|=27  |A|=8981
+(flip)  |A|=8985
+|J|=24  |A|=8988
+|J|=22  |A|=8991
+|J|=20  |A|=8994
+|J|=17  |A|=8997
+|J|=15  |A|=8997
+(flip)  |A|=9001
+|J|=13  |A|=9001
+(flip)  |A|=9005
+|J|=11  |A|=9005
+(flip)  |A|=9009
+|J|=8  |A|=9013
+|J|=6  |A|=9013
+(flip)  |A|=9017
+|J|=3  |A|=9017
+(flip)  |A|=9021
+|J|=0  |A|=9021
+    73
+
+|J|=3680  |A|=7451
+|J|=931  |A|=8563
+|J|=287  |A|=8568
+|J|=284  |A|=8568
+(flip)  |A|=8633
+|J|=251  |A|=8633
+(flip)  |A|=8633
+|A|=8899
+|J|=72  |A|=8899
+(flip)  |A|=8919
+|J|=59  |A|=8925
+|J|=55  |A|=8930
+|J|=52  |A|=8935
+|J|=50  |A|=8935
+(flip)  |A|=8944
+|J|=43  |A|=8947
+|J|=41  |A|=8947
+(flip)  |A|=8952
+|J|=38  |A|=8959
+|J|=34  |A|=8959
+(flip)  |A|=8964
+|J|=30  |A|=8970
+|J|=28  |A|=8974
+|J|=26  |A|=8978
+|J|=24  |A|=8983
+|J|=20  |A|=8986
+|J|=18  |A|=8986
+(flip)  |A|=8991
+|J|=14  |A|=8994
+|J|=11  |A|=8997
+|J|=8  |A|=9001
+|J|=6  |A|=9008
+|J|=2  |A|=9013
+|J|=0  |A|=9013
+    74
+
+|J|=3744  |A|=7607
+|J|=901  |A|=8697
+|J|=291  |A|=8701
+|J|=288  |A|=8701
+(flip)  |A|=8800
+|J|=241  |A|=8800
+(flip)  |A|=8800
+|A|=9026
+|J|=91  |A|=9044
+|J|=77  |A|=9044
+(flip)  |A|=9053
+|J|=71  |A|=9057
+|J|=69  |A|=9065
+|J|=64  |A|=9065
+(flip)  |A|=9070
+|J|=60  |A|=9070
+(flip)  |A|=9072
+|J|=59  |A|=9072
+(flip)  |A|=9077
+|J|=57  |A|=9077
+(flip)  |A|=9086
+|J|=52  |A|=9090
+|J|=49  |A|=9093
+|J|=47  |A|=9093
+(flip)  |A|=9098
+|J|=45  |A|=9102
+|J|=43  |A|=9106
+|J|=41  |A|=9109
+|J|=39  |A|=9109
+(flip)  |A|=9112
+|J|=37  |A|=9112
+(flip)  |A|=9115
+|J|=35  |A|=9115
+(flip)  |A|=9120
+|J|=32  |A|=9123
+|J|=30  |A|=9123
+(flip)  |A|=9128
+|J|=27  |A|=9135
+|J|=23  |A|=9135
+(flip)  |A|=9138
+|J|=21  |A|=9141
+|J|=19  |A|=9144
+|J|=17  |A|=9147
+|J|=15  |A|=9151
+|J|=13  |A|=9155
+|J|=10  |A|=9159
+|J|=8  |A|=9163
+|J|=6  |A|=9167
+|J|=3  |A|=9171
+|J|=0  |A|=9171
+    75
+
+|J|=3763  |A|=7642
+|J|=894  |A|=8763
+|J|=256  |A|=8763
+(flip)  |A|=8830
+|J|=227  |A|=8830
+(flip)  |A|=8832
+|J|=226  |A|=8832
+(flip)  |A|=8832
+|A|=9069
+|J|=68  |A|=9069
+(flip)  |A|=9079
+|J|=61  |A|=9089
+|J|=56  |A|=9094
+|J|=52  |A|=9094
+(flip)  |A|=9099
+|J|=48  |A|=9099
+(flip)  |A|=9106
+|J|=43  |A|=9106
+(flip)  |A|=9110
+|J|=40  |A|=9110
+(flip)  |A|=9115
+|J|=38  |A|=9115
+(flip)  |A|=9118
+|J|=36  |A|=9122
+|J|=34  |A|=9126
+|J|=32  |A|=9130
+|J|=29  |A|=9133
+|J|=27  |A|=9136
+|J|=25  |A|=9136
+(flip)  |A|=9138
+|J|=24  |A|=9138
+(flip)  |A|=9140
+|J|=23  |A|=9143
+|J|=21  |A|=9143
+(flip)  |A|=9148
+|J|=19  |A|=9151
+|J|=16  |A|=9155
+|J|=14  |A|=9155
+(flip)  |A|=9159
+|J|=11  |A|=9159
+(flip)  |A|=9163
+|J|=8  |A|=9163
+(flip)  |A|=9167
+|J|=5  |A|=9167
+(flip)  |A|=9171
+|J|=2  |A|=9171
+(flip)  |A|=9175
+|J|=0  |A|=9175
+    76
+
+|J|=3811  |A|=7729
+|J|=874  |A|=8721
+|J|=309  |A|=8724
+|J|=307  |A|=8724
+(flip)  |A|=8805
+|J|=265  |A|=8805
+(flip)  |A|=8809
+|J|=263  |A|=8809
+(flip)  |A|=8809
+|A|=9066
+|J|=91  |A|=9066
+(flip)  |A|=9072
+|J|=87  |A|=9078
+|J|=83  |A|=9078
+(flip)  |A|=9083
+|J|=79  |A|=9086
+|J|=77  |A|=9086
+(flip)  |A|=9089
+|J|=75  |A|=9089
+(flip)  |A|=9095
+|J|=72  |A|=9098
+|J|=70  |A|=9098
+(flip)  |A|=9103
+|J|=67  |A|=9103
+(flip)  |A|=9107
+|J|=64  |A|=9115
+|J|=59  |A|=9115
+(flip)  |A|=9122
+|J|=53  |A|=9126
+|J|=51  |A|=9128
+|J|=50  |A|=9132
+|J|=47  |A|=9132
+(flip)  |A|=9138
+|J|=44  |A|=9143
+|J|=41  |A|=9146
+|J|=39  |A|=9146
+(flip)  |A|=9153
+|J|=34  |A|=9153
+(flip)  |A|=9157
+|J|=32  |A|=9160
+|J|=29  |A|=9160
+(flip)  |A|=9164
+|J|=26  |A|=9167
+|J|=23  |A|=9167
+(flip)  |A|=9171
+|J|=20  |A|=9171
+(flip)  |A|=9175
+|J|=17  |A|=9175
+(flip)  |A|=9179
+|J|=14  |A|=9181
+|J|=13  |A|=9184
+|J|=11  |A|=9186
+|J|=10  |A|=9186
+(flip)  |A|=9191
+|J|=6  |A|=9191
+(flip)  |A|=9195
+|J|=4  |A|=9195
+(flip)  |A|=9200
+|J|=2  |A|=9204
+|J|=0  |A|=9204
+    77
+
+|J|=3914  |A|=7806
+|J|=873  |A|=8795
+|J|=299  |A|=8795
+(flip)  |A|=8875
+|J|=259  |A|=8875
+(flip)  |A|=8875
+|A|=9130
+|J|=88  |A|=9134
+|J|=85  |A|=9137
+|J|=83  |A|=9137
+(flip)  |A|=9141
+|J|=81  |A|=9146
+|J|=78  |A|=9151
+|J|=75  |A|=9156
+|J|=71  |A|=9160
+|J|=68  |A|=9164
+|J|=65  |A|=9169
+|J|=62  |A|=9169
+(flip)  |A|=9174
+|J|=60  |A|=9180
+|J|=56  |A|=9188
+|J|=52  |A|=9191
+|J|=50  |A|=9191
+(flip)  |A|=9194
+|J|=48  |A|=9207
+|J|=39  |A|=9207
+(flip)  |A|=9211
+|J|=36  |A|=9214
+|J|=34  |A|=9217
+|J|=31  |A|=9220
+|J|=29  |A|=9223
+|J|=26  |A|=9227
+|J|=23  |A|=9231
+|J|=21  |A|=9235
+|J|=19  |A|=9238
+|J|=17  |A|=9238
+(flip)  |A|=9241
+|J|=15  |A|=9241
+(flip)  |A|=9243
+|J|=14  |A|=9245
+|J|=12  |A|=9249
+|J|=9  |A|=9249
+(flip)  |A|=9256
+|J|=4  |A|=9260
+|J|=2  |A|=9264
+|J|=0  |A|=9264
+    78
+
+|J|=3905  |A|=7754
+|J|=953  |A|=8844
+|J|=316  |A|=8844
+(flip)  |A|=8920
+|J|=279  |A|=8920
+(flip)  |A|=8920
+|A|=9164
+|J|=112  |A|=9164
+(flip)  |A|=9188
+|J|=97  |A|=9188
+(flip)  |A|=9195
+|J|=91  |A|=9199
+|J|=88  |A|=9202
+|J|=86  |A|=9205
+|J|=84  |A|=9205
+(flip)  |A|=9209
+|J|=81  |A|=9211
+|J|=79  |A|=9217
+|J|=74  |A|=9220
+|J|=72  |A|=9220
+(flip)  |A|=9225
+|J|=68  |A|=9233
+|J|=63  |A|=9237
+|J|=60  |A|=9241
+|J|=57  |A|=9241
+(flip)  |A|=9246
+|J|=54  |A|=9246
+(flip)  |A|=9249
+|J|=52  |A|=9249
+(flip)  |A|=9254
+|J|=49  |A|=9257
+|J|=47  |A|=9257
+(flip)  |A|=9262
+|J|=43  |A|=9265
+|J|=41  |A|=9268
+|J|=38  |A|=9271
+|J|=36  |A|=9275
+|J|=33  |A|=9279
+|J|=30  |A|=9283
+|J|=27  |A|=9286
+|J|=25  |A|=9291
+|J|=21  |A|=9296
+|J|=17  |A|=9300
+|J|=15  |A|=9304
+|J|=13  |A|=9308
+|J|=11  |A|=9311
+|J|=9  |A|=9311
+(flip)  |A|=9317
+|J|=5  |A|=9322
+|J|=2  |A|=9322
+(flip)  |A|=9325
+|J|=0  |A|=9325
+    79
+
+|J|=3975  |A|=7942
+|J|=873  |A|=8910
+|J|=285  |A|=8910
+(flip)  |A|=8984
+|J|=248  |A|=8984
+(flip)  |A|=8984
+|A|=9252
+|J|=71  |A|=9260
+|J|=65  |A|=9260
+(flip)  |A|=9265
+|J|=62  |A|=9265
+(flip)  |A|=9270
+|J|=59  |A|=9275
+|J|=56  |A|=9284
+|J|=51  |A|=9288
+|J|=48  |A|=9291
+|J|=46  |A|=9291
+(flip)  |A|=9294
+|J|=44  |A|=9302
+|J|=39  |A|=9307
+|J|=36  |A|=9316
+|J|=31  |A|=9319
+|J|=29  |A|=9322
+|J|=26  |A|=9326
+|J|=24  |A|=9326
+(flip)  |A|=9330
+|J|=22  |A|=9334
+|J|=20  |A|=9337
+|J|=18  |A|=9340
+|J|=16  |A|=9344
+|J|=14  |A|=9346
+|J|=12  |A|=9346
+(flip)  |A|=9349
+|J|=10  |A|=9349
+(flip)  |A|=9351
+|J|=9  |A|=9355
+|J|=6  |A|=9359
+|J|=4  |A|=9363
+|J|=2  |A|=9367
+|J|=0  |A|=9367
+    80
+
+|J|=4058  |A|=8065
+|J|=824  |A|=8963
+|J|=272  |A|=8963
+(flip)  |A|=9047
+|J|=228  |A|=9049
+|J|=227  |A|=9049
+(flip)  |A|=9049
+|A|=9268
+|J|=80  |A|=9268
+(flip)  |A|=9280
+|J|=74  |A|=9295
+|J|=62  |A|=9297
+|J|=60  |A|=9302
+|J|=57  |A|=9302
+(flip)  |A|=9307
+|J|=54  |A|=9312
+|J|=50  |A|=9312
+(flip)  |A|=9317
+|J|=48  |A|=9321
+|J|=46  |A|=9324
+|J|=44  |A|=9330
+|J|=39  |A|=9338
+|J|=33  |A|=9342
+|J|=31  |A|=9342
+(flip)  |A|=9346
+|J|=29  |A|=9350
+|J|=26  |A|=9353
+|J|=23  |A|=9356
+|J|=21  |A|=9360
+|J|=19  |A|=9363
+|J|=17  |A|=9368
+|J|=14  |A|=9372
+|J|=12  |A|=9375
+|J|=10  |A|=9379
+|J|=8  |A|=9383
+|J|=5  |A|=9387
+|J|=3  |A|=9387
+(flip)  |A|=9391
+|J|=0  |A|=9391
+    81
+
+|J|=4061  |A|=8152
+|J|=796  |A|=9057
+|J|=239  |A|=9057
+(flip)  |A|=9131
+|J|=200  |A|=9131
+(flip)  |A|=9131
+|A|=9340
+|J|=60  |A|=9349
+|J|=54  |A|=9354
+|J|=52  |A|=9358
+|J|=49  |A|=9362
+|J|=46  |A|=9368
+|J|=42  |A|=9371
+|J|=40  |A|=9371
+(flip)  |A|=9374
+|J|=38  |A|=9380
+|J|=33  |A|=9385
+|J|=29  |A|=9389
+|J|=26  |A|=9393
+|J|=23  |A|=9393
+(flip)  |A|=9397
+|J|=21  |A|=9400
+|J|=19  |A|=9403
+|J|=17  |A|=9407
+|J|=14  |A|=9410
+|J|=12  |A|=9413
+|J|=10  |A|=9417
+|J|=8  |A|=9421
+|J|=6  |A|=9421
+(flip)  |A|=9424
+|J|=4  |A|=9424
+(flip)  |A|=9426
+|J|=3  |A|=9430
+|J|=0  |A|=9430
+    82
+
+|J|=4147  |A|=8190
+|J|=813  |A|=9085
+|J|=261  |A|=9085
+(flip)  |A|=9164
+|J|=221  |A|=9164
+(flip)  |A|=9164
+|A|=9401
+|J|=61  |A|=9409
+|J|=57  |A|=9409
+(flip)  |A|=9414
+|J|=55  |A|=9419
+|J|=51  |A|=9419
+(flip)  |A|=9423
+|J|=49  |A|=9425
+|J|=47  |A|=9425
+(flip)  |A|=9428
+|J|=45  |A|=9431
+|J|=43  |A|=9431
+(flip)  |A|=9433
+|J|=42  |A|=9437
+|J|=39  |A|=9437
+(flip)  |A|=9442
+|J|=36  |A|=9448
+|J|=33  |A|=9452
+|J|=30  |A|=9452
+(flip)  |A|=9456
+|J|=28  |A|=9458
+|J|=27  |A|=9461
+|J|=24  |A|=9464
+|J|=22  |A|=9467
+|J|=19  |A|=9471
+|J|=17  |A|=9475
+|J|=14  |A|=9479
+|J|=11  |A|=9484
+|J|=8  |A|=9484
+(flip)  |A|=9491
+|J|=3  |A|=9495
+|J|=0  |A|=9495
+    83
+
+|J|=4175  |A|=8302
+|J|=799  |A|=9151
+|J|=263  |A|=9151
+(flip)  |A|=9206
+|J|=233  |A|=9206
+(flip)  |A|=9210
+|J|=230  |A|=9210
+(flip)  |A|=9210
+|A|=9476
+|J|=52  |A|=9484
+|J|=46  |A|=9484
+(flip)  |A|=9488
+|J|=44  |A|=9490
+|J|=42  |A|=9490
+(flip)  |A|=9497
+|J|=38  |A|=9497
+(flip)  |A|=9501
+|J|=35  |A|=9508
+|J|=29  |A|=9508
+(flip)  |A|=9511
+|J|=27  |A|=9514
+|J|=25  |A|=9514
+(flip)  |A|=9517
+|J|=23  |A|=9517
+(flip)  |A|=9521
+|J|=21  |A|=9526
+|J|=18  |A|=9528
+|J|=17  |A|=9531
+|J|=15  |A|=9534
+|J|=13  |A|=9537
+|J|=11  |A|=9540
+|J|=8  |A|=9540
+(flip)  |A|=9544
+|J|=6  |A|=9544
+(flip)  |A|=9548
+|J|=4  |A|=9551
+|J|=2  |A|=9555
+|J|=0  |A|=9555
+    84
+
+|J|=4267  |A|=8328
+|J|=816  |A|=9154
+|J|=290  |A|=9154
+(flip)  |A|=9205
+|J|=262  |A|=9205
+(flip)  |A|=9205
+|A|=9476
+|J|=80  |A|=9476
+(flip)  |A|=9494
+|J|=67  |A|=9494
+(flip)  |A|=9499
+|J|=65  |A|=9505
+|J|=60  |A|=9505
+(flip)  |A|=9509
+|J|=57  |A|=9509
+(flip)  |A|=9514
+|J|=53  |A|=9514
+(flip)  |A|=9518
+|J|=51  |A|=9518
+(flip)  |A|=9522
+|J|=49  |A|=9526
+|J|=46  |A|=9526
+(flip)  |A|=9529
+|J|=44  |A|=9533
+|J|=42  |A|=9539
+|J|=38  |A|=9544
+|J|=35  |A|=9547
+|J|=33  |A|=9547
+(flip)  |A|=9549
+|J|=32  |A|=9556
+|J|=27  |A|=9559
+|J|=25  |A|=9562
+|J|=22  |A|=9565
+|J|=20  |A|=9569
+|J|=17  |A|=9573
+|J|=15  |A|=9577
+|J|=12  |A|=9580
+|J|=10  |A|=9583
+|J|=8  |A|=9585
+|J|=6  |A|=9590
+|J|=3  |A|=9594
+|J|=0  |A|=9594
+    85
+
+|J|=4285  |A|=8412
+|J|=818  |A|=9292
+|J|=260  |A|=9300
+|J|=253  |A|=9300
+(flip)  |A|=9338
+|J|=232  |A|=9338
+(flip)  |A|=9338
+|A|=9569
+|J|=77  |A|=9569
+(flip)  |A|=9581
+|J|=68  |A|=9588
+|J|=62  |A|=9588
+(flip)  |A|=9600
+|J|=54  |A|=9600
+(flip)  |A|=9605
+|J|=51  |A|=9612
+|J|=45  |A|=9615
+|J|=43  |A|=9615
+(flip)  |A|=9622
+|J|=38  |A|=9622
+(flip)  |A|=9626
+|J|=36  |A|=9626
+(flip)  |A|=9629
+|J|=34  |A|=9631
+|J|=33  |A|=9631
+(flip)  |A|=9634
+|J|=31  |A|=9634
+(flip)  |A|=9638
+|J|=28  |A|=9642
+|J|=25  |A|=9645
+|J|=23  |A|=9648
+|J|=21  |A|=9652
+|J|=19  |A|=9657
+|J|=14  |A|=9660
+|J|=11  |A|=9664
+|J|=9  |A|=9668
+|J|=7  |A|=9671
+|J|=5  |A|=9673
+|J|=3  |A|=9673
+(flip)  |A|=9677
+|J|=0  |A|=9677
+    86
+
+|J|=4371  |A|=8484
+|J|=806  |A|=9275
+|J|=279  |A|=9275
+(flip)  |A|=9357
+|J|=236  |A|=9357
+(flip)  |A|=9362
+|J|=232  |A|=9362
+(flip)  |A|=9362
+|A|=9563
+|J|=94  |A|=9563
+(flip)  |A|=9577
+|J|=84  |A|=9577
+(flip)  |A|=9580
+|J|=82  |A|=9580
+(flip)  |A|=9586
+|J|=77  |A|=9586
+(flip)  |A|=9591
+|J|=73  |A|=9591
+(flip)  |A|=9594
+|J|=71  |A|=9596
+|J|=69  |A|=9596
+(flip)  |A|=9599
+|J|=67  |A|=9599
+(flip)  |A|=9605
+|J|=62  |A|=9605
+(flip)  |A|=9611
+|J|=60  |A|=9616
+|J|=56  |A|=9616
+(flip)  |A|=9618
+|J|=55  |A|=9618
+(flip)  |A|=9622
+|J|=53  |A|=9625
+|J|=51  |A|=9625
+(flip)  |A|=9631
+|J|=46  |A|=9631
+(flip)  |A|=9635
+|J|=43  |A|=9639
+|J|=40  |A|=9639
+(flip)  |A|=9643
+|J|=37  |A|=9646
+|J|=36  |A|=9651
+|J|=32  |A|=9653
+|J|=30  |A|=9656
+|J|=27  |A|=9656
+(flip)  |A|=9660
+|J|=24  |A|=9663
+|J|=21  |A|=9663
+(flip)  |A|=9667
+|J|=19  |A|=9667
+(flip)  |A|=9671
+|J|=16  |A|=9671
+(flip)  |A|=9675
+|J|=13  |A|=9675
+(flip)  |A|=9679
+|J|=10  |A|=9679
+(flip)  |A|=9684
+|J|=7  |A|=9684
+(flip)  |A|=9688
+|J|=4  |A|=9688
+(flip)  |A|=9692
+|J|=1  |A|=9694
+|J|=0  |A|=9694
+    87
+
+|J|=4394  |A|=8623
+|J|=742  |A|=9418
+|J|=207  |A|=9420
+|J|=206  |A|=9420
+(flip)  |A|=9465
+|J|=181  |A|=9465
+(flip)  |A|=9465
+|A|=9657
+|J|=53  |A|=9657
+(flip)  |A|=9669
+|J|=44  |A|=9672
+|J|=42  |A|=9677
+|J|=39  |A|=9682
+|J|=36  |A|=9682
+(flip)  |A|=9685
+|J|=34  |A|=9698
+|J|=26  |A|=9698
+(flip)  |A|=9701
+|J|=24  |A|=9705
+|J|=21  |A|=9708
+|J|=19  |A|=9714
+|J|=13  |A|=9718
+|J|=10  |A|=9722
+|J|=8  |A|=9725
+|J|=6  |A|=9725
+(flip)  |A|=9732
+|J|=0  |A|=9732
+    88
+
+|J|=4453  |A|=8735
+|J|=699  |A|=9473
+|J|=191  |A|=9473
+(flip)  |A|=9519
+|J|=168  |A|=9519
+(flip)  |A|=9519
+|A|=9688
+|J|=54  |A|=9700
+|J|=45  |A|=9700
+(flip)  |A|=9709
+|J|=39  |A|=9712
+|J|=37  |A|=9718
+|J|=32  |A|=9721
+|J|=30  |A|=9723
+|J|=28  |A|=9723
+(flip)  |A|=9728
+|J|=26  |A|=9728
+(flip)  |A|=9732
+|J|=23  |A|=9732
+(flip)  |A|=9734
+|J|=22  |A|=9734
+(flip)  |A|=9738
+|J|=19  |A|=9738
+(flip)  |A|=9743
+|J|=16  |A|=9746
+|J|=14  |A|=9746
+(flip)  |A|=9749
+|J|=13  |A|=9752
+|J|=10  |A|=9755
+|J|=7  |A|=9757
+|J|=5  |A|=9759
+|J|=3  |A|=9759
+(flip)  |A|=9763
+|J|=0  |A|=9763
+    89
+
+|J|=4509  |A|=8736
+|J|=733  |A|=9508
+|J|=208  |A|=9508
+(flip)  |A|=9556
+|J|=184  |A|=9556
+(flip)  |A|=9556
+|A|=9747
+|J|=56  |A|=9747
+(flip)  |A|=9759
+|J|=46  |A|=9764
+|J|=43  |A|=9764
+(flip)  |A|=9769
+|J|=40  |A|=9769
+(flip)  |A|=9773
+|J|=37  |A|=9777
+|J|=34  |A|=9781
+|J|=31  |A|=9785
+|J|=29  |A|=9785
+(flip)  |A|=9789
+|J|=26  |A|=9792
+|J|=24  |A|=9798
+|J|=20  |A|=9798
+(flip)  |A|=9802
+|J|=18  |A|=9805
+|J|=15  |A|=9808
+|J|=13  |A|=9811
+|J|=10  |A|=9815
+|J|=8  |A|=9819
+|J|=6  |A|=9821
+|J|=4  |A|=9825
+|J|=2  |A|=9825
+(flip)  |A|=9828
+|J|=0  |A|=9828
+    90
+
+|J|=4531  |A|=8810
+|J|=705  |A|=9525
+|J|=207  |A|=9525
+(flip)  |A|=9564
+|J|=185  |A|=9564
+(flip)  |A|=9564
+|A|=9761
+|J|=53  |A|=9761
+(flip)  |A|=9770
+|J|=47  |A|=9775
+|J|=43  |A|=9779
+|J|=40  |A|=9779
+(flip)  |A|=9783
+|J|=37  |A|=9783
+(flip)  |A|=9786
+|J|=35  |A|=9790
+|J|=32  |A|=9793
+|J|=30  |A|=9793
+(flip)  |A|=9798
+|J|=28  |A|=9802
+|J|=25  |A|=9810
+|J|=19  |A|=9813
+|J|=17  |A|=9813
+(flip)  |A|=9816
+|J|=15  |A|=9820
+|J|=13  |A|=9823
+|J|=11  |A|=9826
+|J|=9  |A|=9828
+|J|=7  |A|=9832
+|J|=4  |A|=9837
+|J|=0  |A|=9837
+    91
+
+|J|=4616  |A|=8888
+|J|=730  |A|=9588
+|J|=234  |A|=9588
+(flip)  |A|=9637
+|J|=208  |A|=9637
+(flip)  |A|=9637
+|A|=9846
+|J|=67  |A|=9846
+(flip)  |A|=9858
+|J|=58  |A|=9862
+|J|=55  |A|=9871
+|J|=48  |A|=9871
+(flip)  |A|=9875
+|J|=46  |A|=9882
+|J|=41  |A|=9885
+|J|=39  |A|=9893
+|J|=33  |A|=9896
+|J|=31  |A|=9899
+|J|=28  |A|=9903
+|J|=25  |A|=9906
+|J|=22  |A|=9909
+|J|=19  |A|=9913
+|J|=16  |A|=9917
+|J|=14  |A|=9919
+|J|=12  |A|=9919
+(flip)  |A|=9922
+|J|=10  |A|=9922
+(flip)  |A|=9924
+|J|=9  |A|=9926
+|J|=7  |A|=9931
+|J|=3  |A|=9931
+(flip)  |A|=9935
+|J|=0  |A|=9935
+    92
+
+|J|=4670  |A|=9016
+|J|=668  |A|=9686
+|J|=195  |A|=9686
+(flip)  |A|=9729
+|J|=169  |A|=9729
+(flip)  |A|=9731
+|J|=168  |A|=9731
+(flip)  |A|=9731
+|A|=9917
+|J|=43  |A|=9917
+(flip)  |A|=9922
+|J|=39  |A|=9924
+|J|=37  |A|=9924
+(flip)  |A|=9928
+|J|=34  |A|=9931
+|J|=32  |A|=9931
+(flip)  |A|=9937
+|J|=27  |A|=9937
+(flip)  |A|=9941
+|J|=24  |A|=9944
+|J|=22  |A|=9949
+|J|=19  |A|=9952
+|J|=16  |A|=9954
+|J|=14  |A|=9954
+(flip)  |A|=9958
+|J|=11  |A|=9961
+|J|=8  |A|=9961
+(flip)  |A|=9965
+|J|=6  |A|=9967
+|J|=4  |A|=9969
+|J|=2  |A|=9969
+(flip)  |A|=9973
+|J|=0  |A|=9973
+    93
+
+|J|=4692  |A|=9070
+|J|=684  |A|=9733
+|J|=201  |A|=9733
+(flip)  |A|=9777
+|J|=179  |A|=9777
+(flip)  |A|=9777
+|A|=9945
+|J|=66  |A|=9945
+(flip)  |A|=9949
+|J|=63  |A|=9955
+|J|=59  |A|=9955
+(flip)  |A|=9964
+|J|=52  |A|=9974
+|J|=44  |A|=9974
+(flip)  |A|=9978
+|J|=41  |A|=9981
+|J|=39  |A|=9983
+|J|=37  |A|=9983
+(flip)  |A|=9987
+|J|=34  |A|=9990
+|J|=32  |A|=9997
+|J|=26  |A|=10000
+|J|=23  |A|=10003
+|J|=20  |A|=10006
+|J|=18  |A|=10010
+|J|=15  |A|=10013
+|J|=13  |A|=10015
+|J|=11  |A|=10017
+|J|=9  |A|=10019
+|J|=7  |A|=10024
+|J|=3  |A|=10028
+|J|=0  |A|=10028
+    94
+
+|J|=4719  |A|=9190
+|J|=611  |A|=9770
+|J|=170  |A|=9770
+(flip)  |A|=9801
+|J|=153  |A|=9801
+(flip)  |A|=9801
+|A|=9950
+|J|=50  |A|=9950
+(flip)  |A|=9964
+|J|=38  |A|=9969
+|J|=35  |A|=9972
+|J|=33  |A|=9976
+|J|=30  |A|=9976
+(flip)  |A|=9981
+|J|=26  |A|=9981
+(flip)  |A|=9984
+|J|=24  |A|=9984
+(flip)  |A|=9987
+|J|=22  |A|=9991
+|J|=19  |A|=9991
+(flip)  |A|=9995
+|J|=17  |A|=9998
+|J|=15  |A|=10002
+|J|=12  |A|=10005
+|J|=9  |A|=10008
+|J|=7  |A|=10012
+|J|=4  |A|=10015
+|J|=2  |A|=10017
+|J|=0  |A|=10017
+    95
+
+|J|=4832  |A|=9262
+|J|=625  |A|=9817
+|J|=199  |A|=9817
+(flip)  |A|=9837
+|J|=187  |A|=9837
+(flip)  |A|=9837
+|A|=10027
+|J|=57  |A|=10027
+(flip)  |A|=10032
+|J|=53  |A|=10039
+|J|=48  |A|=10043
+|J|=46  |A|=10049
+|J|=41  |A|=10051
+|J|=39  |A|=10051
+(flip)  |A|=10057
+|J|=34  |A|=10058
+|J|=33  |A|=10058
+(flip)  |A|=10063
+|J|=29  |A|=10064
+|J|=28  |A|=10067
+|J|=25  |A|=10071
+|J|=23  |A|=10076
+|J|=18  |A|=10079
+|J|=15  |A|=10083
+|J|=12  |A|=10087
+|J|=10  |A|=10089
+|J|=8  |A|=10089
+(flip)  |A|=10092
+|J|=6  |A|=10092
+(flip)  |A|=10094
+|J|=5  |A|=10098
+|J|=2  |A|=10102
+|J|=0  |A|=10102
+    96
+
+|J|=4847  |A|=9296
+|J|=630  |A|=9895
+|J|=173  |A|=9895
+(flip)  |A|=9927
+|J|=154  |A|=9927
+(flip)  |A|=9927
+|A|=10082
+|J|=48  |A|=10089
+|J|=43  |A|=10094
+|J|=39  |A|=10098
+|J|=36  |A|=10104
+|J|=31  |A|=10106
+|J|=29  |A|=10106
+(flip)  |A|=10111
+|J|=25  |A|=10116
+|J|=21  |A|=10116
+(flip)  |A|=10118
+|J|=20  |A|=10121
+|J|=18  |A|=10124
+|J|=16  |A|=10127
+|J|=14  |A|=10130
+|J|=11  |A|=10132
+|J|=9  |A|=10134
+|J|=7  |A|=10139
+|J|=3  |A|=10143
+|J|=0  |A|=10143
+    97
+
+|J|=4879  |A|=9461
+|J|=547  |A|=9977
+|J|=145  |A|=9977
+(flip)  |A|=10008
+|J|=127  |A|=10008
+(flip)  |A|=10008
+|A|=10115
+|J|=54  |A|=10115
+(flip)  |A|=10120
+|J|=50  |A|=10129
+|J|=44  |A|=10136
+|J|=38  |A|=10138
+|J|=36  |A|=10140
+|J|=34  |A|=10143
+|J|=32  |A|=10147
+|J|=29  |A|=10147
+(flip)  |A|=10149
+|J|=28  |A|=10152
+|J|=25  |A|=10156
+|J|=22  |A|=10159
+|J|=20  |A|=10162
+|J|=18  |A|=10165
+|J|=16  |A|=10167
+|J|=14  |A|=10169
+|J|=12  |A|=10171
+|J|=10  |A|=10176
+|J|=6  |A|=10180
+|J|=3  |A|=10184
+|J|=0  |A|=10184
+    98
+
+|J|=4936  |A|=9514
+|J|=561  |A|=10039
+|J|=149  |A|=10039
+(flip)  |A|=10061
+|J|=135  |A|=10067
+|J|=130  |A|=10067
+(flip)  |A|=10067
+|A|=10179
+|J|=52  |A|=10184
+|J|=49  |A|=10187
+|J|=47  |A|=10187
+(flip)  |A|=10193
+|J|=42  |A|=10193
+(flip)  |A|=10196
+|J|=40  |A|=10203
+|J|=35  |A|=10203
+(flip)  |A|=10208
+|J|=32  |A|=10208
+(flip)  |A|=10213
+|J|=28  |A|=10215
+|J|=26  |A|=10219
+|J|=23  |A|=10224
+|J|=18  |A|=10227
+|J|=15  |A|=10230
+|J|=12  |A|=10232
+|J|=10  |A|=10234
+|J|=8  |A|=10238
+|J|=5  |A|=10242
+|J|=3  |A|=10242
+(flip)  |A|=10246
+|J|=0  |A|=10246
+    99
+
+|J|=5046  |A|=9616
+|J|=517  |A|=10062
+|J|=153  |A|=10062
+(flip)  |A|=10085
+|J|=139  |A|=10085
+(flip)  |A|=10085
+|A|=10218
+|J|=49  |A|=10225
+|J|=43  |A|=10225
+(flip)  |A|=10237
+|J|=34  |A|=10244
+|J|=28  |A|=10247
+|J|=26  |A|=10251
+|J|=23  |A|=10258
+|J|=18  |A|=10259
+|J|=17  |A|=10262
+|J|=14  |A|=10265
+|J|=11  |A|=10269
+|J|=8  |A|=10273
+|J|=5  |A|=10277
+|J|=3  |A|=10281
+|J|=0  |A|=10281
+   100
+
+|J|=5061  |A|=9678
+|J|=522  |A|=10138
+|J|=142  |A|=10138
+(flip)  |A|=10167
+|J|=125  |A|=10167
+(flip)  |A|=10167
+|A|=10290
+|J|=40  |A|=10290
+(flip)  |A|=10298
+|J|=34  |A|=10298
+(flip)  |A|=10301
+|J|=32  |A|=10305
+|J|=28  |A|=10311
+|J|=23  |A|=10313
+|J|=21  |A|=10315
+|J|=19  |A|=10316
+|J|=18  |A|=10319
+|J|=15  |A|=10322
+|J|=13  |A|=10325
+|J|=10  |A|=10328
+|J|=7  |A|=10328
+(flip)  |A|=10332
+|J|=4  |A|=10334
+|J|=2  |A|=10336
+|J|=0  |A|=10336
+   101
+
+|J|=5114  |A|=9810
+|J|=453  |A|=10263
+|J|=79  |A|=10263
+(flip)  |A|=10272
+|J|=72  |A|=10272
+(flip)  |A|=10272
+|A|=10336
+|J|=27  |A|=10339
+|J|=25  |A|=10341
+|J|=23  |A|=10347
+|J|=18  |A|=10351
+|J|=15  |A|=10354
+|J|=13  |A|=10357
+|J|=10  |A|=10359
+|J|=8  |A|=10361
+|J|=6  |A|=10365
+|J|=3  |A|=10369
+|J|=0  |A|=10369
+   102
+
+|J|=5154  |A|=9851
+|J|=475  |A|=10287
+|J|=100  |A|=10287
+(flip)  |A|=10301
+|J|=89  |A|=10304
+|J|=86  |A|=10304
+(flip)  |A|=10304
+|A|=10359
+|J|=49  |A|=10366
+|J|=44  |A|=10371
+|J|=40  |A|=10376
+|J|=35  |A|=10378
+|J|=33  |A|=10378
+(flip)  |A|=10382
+|J|=31  |A|=10390
+|J|=24  |A|=10393
+|J|=22  |A|=10398
+|J|=18  |A|=10401
+|J|=16  |A|=10406
+|J|=11  |A|=10409
+|J|=8  |A|=10413
+|J|=5  |A|=10415
+|J|=3  |A|=10419
+|J|=0  |A|=10419
+   103
+
+|J|=5208  |A|=9941
+|J|=450  |A|=10351
+|J|=85  |A|=10355
+|J|=81  |A|=10355
+(flip)  |A|=10366
+|J|=75  |A|=10366
+(flip)  |A|=10366
+|A|=10417
+|J|=41  |A|=10417
+(flip)  |A|=10425
+|J|=35  |A|=10430
+|J|=30  |A|=10434
+|J|=27  |A|=10437
+|J|=25  |A|=10445
+|J|=18  |A|=10452
+|J|=12  |A|=10455
+|J|=9  |A|=10458
+|J|=6  |A|=10460
+|J|=4  |A|=10462
+|J|=2  |A|=10464
+|J|=0  |A|=10464
+   104
+
+|J|=5278  |A|=10055
+|J|=417  |A|=10415
+|J|=78  |A|=10415
+(flip)  |A|=10426
+|J|=68  |A|=10426
+(flip)  |A|=10426
+|A|=10482
+|J|=28  |A|=10484
+|J|=26  |A|=10486
+|J|=24  |A|=10488
+|J|=22  |A|=10491
+|J|=20  |A|=10492
+|J|=19  |A|=10497
+|J|=14  |A|=10500
+|J|=11  |A|=10503
+|J|=8  |A|=10507
+|J|=4  |A|=10509
+|J|=2  |A|=10511
+|J|=0  |A|=10511
+   105
+
+|J|=5312  |A|=10159
+|J|=378  |A|=10503
+|J|=52  |A|=10503
+(flip)  |A|=10513
+|J|=43  |A|=10513
+(flip)  |A|=10513
+|A|=10542
+|J|=21  |A|=10547
+|J|=17  |A|=10550
+|J|=14  |A|=10553
+|J|=11  |A|=10555
+|J|=9  |A|=10557
+|J|=7  |A|=10559
+|J|=5  |A|=10561
+|J|=3  |A|=10565
+|J|=0  |A|=10565
+FASTCORE returns wrong answers in 0% of cases!
+SWIFTCORE w/o reduction returns wrong answers in 0% of cases!
+SWIFTCORE w/ reduction returns wrong answers in 0% of cases!
+switftcore w/o reduction was computed in 14% of fastcore runtime.
+switftcore w/ reduction was computed in 67% of fastcore runtime.
+switftcore w/o reduction performed with 101% of fastcore reactions.
+switftcore w/ reduction performed with 100% of fastcore reactions.
+The average number of reactions in the intersection is 94% of fastcore reactions.
+</pre><img vspace="5" hspace="5" src="swiftcoreTest_01.png" alt=""> <img vspace="5" hspace="5" src="swiftcoreTest_02.png" alt=""> <img vspace="5" hspace="5" src="swiftcoreTest_03.png" alt=""> <p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2018b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+clear all; close all; clc;
+% importing the metabolic network model
+load('Recon3D_301/Recon3DModel_301.mat');
+model = Recon3DModel;
+model.rev = double(model.lb < 0);
+clear Recon3DModel;
+n = length(model.rxns);
+solver = 'ibm_cplex';
+LP = zeros(2, 105);
+runtime = zeros(3, 105);
+performance = zeros(4, 105);
+errors = true(3, 105);
+for k = 1:105
+    disp(k);
+    % randomly sampling the set of core reactions
+    core = randsample(n, 100*k);
+    % FASTCORE
+    tic;
+    coreRxn = fastcore(core, model, 1e-4);
+    runtime(1, k) = toc;
+    coreRxnBool = false(n, 1);
+    coreRxnBool(coreRxn) = true;
+    performance(1, k) = sum(coreRxnBool);
+    % consistency checking
+    if all(coreRxnBool(core))
+        tempmodel.S = model.S(:, coreRxnBool);
+        tempmodel.rev = model.rev(coreRxnBool);
+        tempmodel.lb = model.lb(coreRxnBool);
+        tempmodel.ub = model.ub(coreRxnBool);
+        tempmodel.rxns = model.rxns(coreRxnBool);
+        tempmodel.c = model.c(coreRxnBool);
+        tempmodel.mets = model.mets;
+        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        if all(A.' == 1:length(A))
+            errors(1, k) = false;
+        end
+    end
+    % SWIFTCORE w/o reduction
+    tic;
+    [coreInd, numLP] = swiftcore(model.S, model.rev, core, ones(n, 1), false, solver);
+    runtime(2, k) = toc;
+    LP(1, k) = numLP;
+    performance(2, k) = sum(coreInd);
+    % consistency checking
+    if all(coreInd(core))
+        tempmodel.S = model.S(:, coreInd);
+        tempmodel.rev = model.rev(coreInd);
+        tempmodel.lb = model.lb(coreInd);
+        tempmodel.ub = model.ub(coreInd);
+        tempmodel.rxns = model.rxns(coreInd);
+        tempmodel.c = model.c(coreInd);
+        tempmodel.mets = model.mets;
+        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        if all(A.' == 1:length(A))
+            errors(2, k) = false;
+        end
+    end
+    % SWIFTCORE w/ reduction
+    tic;
+    [coreIndReduce, numLP] = swiftcore(model.S, model.rev, core, ones(n, 1), true, solver);
+    runtime(3, k) = toc;
+    LP(2, k) = numLP;
+    performance(3, k) = sum(coreIndReduce);
+    % consistency checking
+    if all(coreIndReduce(core))
+        tempmodel.S = model.S(:, coreIndReduce);
+        tempmodel.rev = model.rev(coreIndReduce);
+        tempmodel.lb = model.lb(coreIndReduce);
+        tempmodel.ub = model.ub(coreIndReduce);
+        tempmodel.rxns = model.rxns(coreIndReduce);
+        tempmodel.c = model.c(coreIndReduce);
+        tempmodel.mets = model.mets;
+        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        if all(A.' == 1:length(A))
+            errors(3, k) = false;
+        end
+    end
+    % calculating the size of the intersection of the answers of the three algorithms above
+    performance(4, k) = sum(coreIndReduce + coreInd + coreRxnBool == 3);
+end
+% consistency checking
+fprintf('FASTCORE returns wrong answers in %d%% of cases!\n', round(100*sum(errors(1,:))/size(errors,2)));
+fprintf('SWIFTCORE w/o reduction returns wrong answers in %d%% of cases!\n', round(100*sum(errors(2,:))/size(errors,2)));
+fprintf('SWIFTCORE w/ reduction returns wrong answers in %d%% of cases!\n', round(100*sum(errors(3,:))/size(errors,2)));
+% drawing scatterplots for the comparison of the number of LPs
+figure();
+plot(100*(1:105),LP(1,:),'o',100*(1:105),LP(2,:),'*');
+legend({'SWIFTCORE w/o reduction','SWIFTCORE w/ reduction'});
+xlabel('number of core reactions');
+ylabel('number of solved LPs');
+savefig('LP');
+% drawing scatterplots for the comparison of the runtime
+figure();
+plot(100*(1:105),runtime(1,:),'o',100*(1:105),runtime(2,:),'*',100*(1:105),runtime(3,:),'+');
+legend({'FASTCORE','SWIFTCORE w/o reduction','SWIFTCORE w/ reduction'},'Location','northeast');
+xlabel('number of core reactions');
+ylabel('runtime in seconds');
+savefig('runtime');
+% drawing scatterplots for the comparison of the sparsity
+figure();
+plot(100*(1:105),performance(1,:),'o',100*(1:105),performance(2,:),'*',...
+    100*(1:105),performance(3,:),'+',100*(1:105),performance(4,:),'x');
+legend({'FASTCORE','SWIFTCORE w/o reduction','SWIFTCORE w/ reduction','intersection'},'Location','southeast');
+xlabel('number of core reactions');
+ylabel('size of the subnetwork');
+savefig('performance');
+% comparing the improvement percentage of the runtime
+fprintf('switftcore w/o reduction was computed in %d%% of fastcore runtime.\n', round(mean(runtime(2, :)./runtime(1, :))*100));
+fprintf('switftcore w/ reduction was computed in %d%% of fastcore runtime.\n', round(mean(runtime(3, :)./runtime(1, :))*100));
+% comparing the improvement percentage of the sparsity
+fprintf('switftcore w/o reduction performed with %d%% of fastcore reactions.\n', round(mean(performance(2, :)./performance(1, :))*100));
+fprintf('switftcore w/ reduction performed with %d%% of fastcore reactions.\n', round(mean(performance(3, :)./performance(1, :))*100));
+fprintf('The average number of reactions in the intersection is %d%% of fastcore reactions.\n', ...
+    round(mean(performance(4, :)./performance(1, :))*100));
+##### SOURCE END #####
+--></body></html>

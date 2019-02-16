@@ -60,17 +60,18 @@ function [reconstruction, LP] = swiftcore(S, rev, coreInd, weights, reduction, v
     % the zero-tolerance parameter is the smallest flux value that is considered nonzero
     tol = norm(S, 'fro')*eps(class(S));
     % phase one of unblocking the irreversible reactions
-    blocked = zeros(length(weights), 1);
+    n_ = length(weights);
+    blocked = zeros(n_, 1);
     LP = 1;
     flux = core(S, rev, blocked, weights, solver);
     weights(abs(flux) > tol) = 0;
     % identifying the blocked reversible reactions
-    if reduction
+    if n == n_
+        blocked = ismember(reacNum, coreInd);
+    else
         [Q, R, ~] = qr(transpose(S(:, weights == 0)));
         Z = Q(:, sum(abs(diag(R)) > tol)+1:end);
         blocked(weights == 0) = vecnorm(Z, 2, 2) < tol;
-    else
-        blocked(abs(flux) < tol) = 1;
     end
     % phase two of unblocking the reversible reactions
     while any(blocked)
