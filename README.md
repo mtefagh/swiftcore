@@ -1,5 +1,5 @@
 # swiftcc
-*swiftcc* is a tool for finding the largest flux consistent subnetwork of the original metabolic network. 'swiftccTest.m' provides a benchmark to compare its performance against [*fastcc*](https://wwwen.uni.lu/research/fstc/life_sciences_research_unit/research_areas/systems_biology/software).
+[swiftcc](https://github.com/mtefagh/swiftcore/blob/master/swiftcc.m) is a tool for finding the largest flux consistent subnetwork of the original metabolic network. [swiftccTest](https://github.com/mtefagh/swiftcore/blob/master/swiftccTest.m) provides a benchmark to compare its performance against [fastcc](https://wwwen.uni.lu/research/fstc/life_sciences_research_unit/research_areas/systems_biology/software).
 
 ## Usage
 ### `consistent = swiftcc(S, rev [, solver])`
@@ -17,7 +17,7 @@
 ***
 
 # swiftcore
-*swiftcore* is a tool for the context-specific reconstruction of genome-scale metabolic networks. 'swiftcoreTest.m' provides a benchmark to compare its performance against [*fastcore*](https://wwwen.uni.lu/research/fstc/life_sciences_research_unit/research_areas/systems_biology/software).
+[swiftcore](https://github.com/mtefagh/swiftcore/blob/master/swiftcore.m) is a tool for the context-specific reconstruction of genome-scale metabolic networks. [swiftcoreTest](https://github.com/mtefagh/swiftcore/blob/master/swiftcoreTest.m) provides a benchmark to compare its performance against [fastcore](https://wwwen.uni.lu/research/fstc/life_sciences_research_unit/research_areas/systems_biology/software).
 
 ## Usage
 ### `reconstruction = swiftcore(S, rev, coreInd, weights, reduction [, solver])`
