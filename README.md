@@ -5,14 +5,14 @@
 ### `consistent = swiftcc(S, rev [, solver])`
 
 ### Inputs:
-1. `S`: the associated sparse stoichiometric matrix
-2. `rev`: the 0-1 vector with 1's corresponding to the reversible reactions
+1. `S`: the associated sparse **stoichiometric matrix**
+2. `rev`: the 0-1 vector with 1's corresponding to the **reversible reactions**
 
 ### Optional inputs
 * `solver`: the **LP solver** to be used; the currently available options are _gurobi_, _linprog_, and _cplex_ with the default value of _linprog_
 
 ### Outputs:
-* `consistent`: the 0-1 indicator vector of the reactions constituting the maximum flux consistent metabolic subnetwork
+* `consistent`: the 0-1 indicator vector of the reactions constituting the maximum **flux consistent metabolic subnetwork**
 
 ***
 
@@ -33,7 +33,7 @@
 * `solver`: the **LP solver** to be used; the currently available options are _gurobi_, _linprog_, and _cplex_ with the default value of _linprog_
 
 ### Outputs
-* `reconstruction`: the 0-1 indicator vector of the reactions constituting the **consistent metabolic network** reconstructed from the core reactions
+* `reconstruction`: the 0-1 indicator vector of the reactions constituting the **flux consistent metabolic network** reconstructed from the core reactions
 
 # License
 The *swift* family is distributed under the [GNU General Public License v3.0](http://www.gnu.org/copyleft/gpl.html).
