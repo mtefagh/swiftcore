@@ -1,0 +1,997 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>weightedTest</title><meta name="generator" content="MATLAB 9.5"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2019-02-18"><meta name="DC.source" content="weightedTest.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><pre class="codeinput">clear <span class="string">all</span>; close <span class="string">all</span>; clc;
+<span class="comment">% importing the metabolic network model</span>
+load(<span class="string">'Recon3D_301/Recon3DModel_301.mat'</span>);
+model = Recon3DModel;
+model.rev = double(model.lb &lt; 0);
+clear <span class="string">Recon3DModel</span>;
+n = length(model.rxns);
+<span class="comment">% setting up the LP solver to IBM CPLEX</span>
+solver = <span class="string">'ibm_cplex'</span>;
+changeCobraSolver(solver);
+<span class="comment">% selecting a range of different magnitudes for the weights</span>
+weights = 2.^(-4:4);
+l = length(weights);
+LP = zeros(2, l);
+runtime = zeros(3, l);
+performance = zeros(4, l);
+errors = true(3, l);
+<span class="keyword">for</span> k = 1:l
+    disp(k);
+    <span class="comment">% randomly sampling the set of core reactions</span>
+    core = randsample(n, n/2);
+    <span class="comment">% FASTCORE</span>
+    tic;
+    coreRxn = fastCoreWeighted(core, model, weights(k)*ones(n, 1), 1e-4);
+    runtime(1, k) = toc;
+    coreRxnBool = false(n, 1);
+    coreRxnBool(coreRxn) = true;
+    performance(1, k) = sum(coreRxnBool);
+    <span class="comment">% consistency checking</span>
+    <span class="keyword">if</span> all(coreRxnBool(core))
+        tempmodel.S = model.S(:, coreRxnBool);
+        tempmodel.rev = model.rev(coreRxnBool);
+        tempmodel.lb = model.lb(coreRxnBool);
+        tempmodel.ub = model.ub(coreRxnBool);
+        tempmodel.rxns = model.rxns(coreRxnBool);
+        tempmodel.c = model.c(coreRxnBool);
+        tempmodel.mets = model.mets;
+        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        <span class="keyword">if</span> all(A.' == 1:length(A))
+            errors(1, k) = false;
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+    <span class="comment">% SWIFTCORE w/o reduction</span>
+    tic;
+    [coreInd, numLP] = swiftcore(model.S, model.rev, core, weights(k)*ones(n, 1), false, solver);
+    runtime(2, k) = toc;
+    LP(1, k) = numLP;
+    performance(2, k) = sum(coreInd);
+    <span class="comment">% consistency checking</span>
+    <span class="keyword">if</span> all(coreInd(core))
+        tempmodel.S = model.S(:, coreInd);
+        tempmodel.rev = model.rev(coreInd);
+        tempmodel.lb = model.lb(coreInd);
+        tempmodel.ub = model.ub(coreInd);
+        tempmodel.rxns = model.rxns(coreInd);
+        tempmodel.c = model.c(coreInd);
+        tempmodel.mets = model.mets;
+        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        <span class="keyword">if</span> all(A.' == 1:length(A))
+            errors(2, k) = false;
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+    <span class="comment">% SWIFTCORE w/ reduction</span>
+    tic;
+    [coreIndReduce, numLP] = swiftcore(model.S, model.rev, core, weights(k)*ones(n, 1), true, solver);
+    runtime(3, k) = toc;
+    LP(2, k) = numLP;
+    performance(3, k) = sum(coreIndReduce);
+    <span class="comment">% consistency checking</span>
+    <span class="keyword">if</span> all(coreIndReduce(core))
+        tempmodel.S = model.S(:, coreIndReduce);
+        tempmodel.rev = model.rev(coreIndReduce);
+        tempmodel.lb = model.lb(coreIndReduce);
+        tempmodel.ub = model.ub(coreIndReduce);
+        tempmodel.rxns = model.rxns(coreIndReduce);
+        tempmodel.c = model.c(coreIndReduce);
+        tempmodel.mets = model.mets;
+        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        <span class="keyword">if</span> all(A.' == 1:length(A))
+            errors(3, k) = false;
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+    <span class="comment">% calculating the size of the intersection of the answers of the three algorithms above</span>
+    performance(4, k) = sum(coreIndReduce + coreInd + coreRxnBool == 3);
+<span class="keyword">end</span>
+<span class="comment">% consistency checking</span>
+<span class="keyword">if</span> any(errors, <span class="string">'all'</span>)
+    warning(<span class="string">'Wrong answers!'</span>);
+<span class="keyword">end</span>
+<span class="comment">% drawing boxplots for the comparison of runtimes</span>
+figure();
+boxplot(runtime.',<span class="string">'Notch'</span>,<span class="string">'on'</span>,<span class="string">'Labels'</span>,{<span class="string">'FASTCORE'</span>,<span class="string">'SWIFTCORE w/o reduction'</span>,<span class="string">'SWIFTCORE w/ reduction'</span>});
+ylabel(<span class="string">'runtime in seconds'</span>);
+savefig(<span class="string">'runtimeBox'</span>);
+<span class="comment">% drawing boxplots for the comparison of sparsity</span>
+figure();
+boxplot(performance.',<span class="string">'Notch'</span>,<span class="string">'on'</span>,<span class="string">'Labels'</span>,{<span class="string">'FASTCORE'</span>,<span class="string">'SWIFTCORE w/o reduction'</span>,<span class="string">'SWIFTCORE w/ reduction'</span>,<span class="string">'intersection'</span>});
+ylabel(<span class="string">'size of the subnetwork'</span>);
+savefig(<span class="string">'performanceBox'</span>);
+<span class="comment">% drawing boxplots for the comparison of the number of LPs</span>
+figure();
+boxplot(LP.',<span class="string">'Notch'</span>,<span class="string">'on'</span>,<span class="string">'Labels'</span>,{<span class="string">'SWIFTCORE w/o reduction'</span>,<span class="string">'SWIFTCORE w/ reduction'</span>});
+ylabel(<span class="string">'number of solved LPs'</span>);
+savefig(<span class="string">'LPBox'</span>);
+</pre><pre class="codeoutput">Warning: File: C:\Program
+Files\IBM\ILOG\CPLEX_Studio128\cplex\matlab\x64_win64\@Cplex\Cplex.p Line: 965
+Column: 0
+Defining "changedParam" in the nested function shares it with the parent
+function.  In a future release, to share "changedParam" between parent and
+nested functions, explicitly define it in the parent function. 
+
+ &gt; IBM ILOG CPLEX interface added to MATLAB path.
+ &gt; The solver compatibility is not tested with MATLAB R2018b.
+     1
+
+|J|=2657  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=6073
+|J|=938  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7730
+|J|=88  |A|=7730
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7896
+|J|=26  |A|=7896
+(flip)  |A|=7896
+|A|=7896
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7901
+|J|=24  |A|=7901
+(flip)  |A|=7904
+|J|=22  |A|=7904
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7908
+|J|=20  |A|=7908
+(flip)  |A|=7913
+|J|=18  |A|=7913
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7917
+|J|=16  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7920
+|J|=14  |A|=7924
+|J|=12  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7928
+|J|=10  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7932
+|J|=8  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7935
+|J|=6  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7938
+|J|=4  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7942
+|J|=2  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7948
+|J|=0  |A|=7948
+Elapsed time is 12.932422 seconds.
+     2
+
+|J|=2720  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=6086
+|J|=901  |A|=7725
+|J|=98  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7745
+|J|=86  |A|=7745
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7877
+|J|=30  |A|=7877
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7879
+|J|=29  |A|=7879
+(flip)  |A|=7879
+|A|=7879
+(flip)  |A|=7883
+|J|=27  |A|=7887
+|J|=25  |A|=7887
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7890
+|J|=23  |A|=7890
+(flip)  |A|=7893
+|J|=21  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7897
+|J|=19  |A|=7897
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7901
+|J|=17  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7906
+|J|=15  |A|=7906
+(flip)  |A|=7912
+|J|=13  |A|=7912
+(flip)  |A|=7916
+|J|=11  |A|=7916
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7918
+|J|=10  |A|=7924
+|J|=8  |A|=7924
+(flip)  |A|=7928
+|J|=6  |A|=7931
+|J|=4  |A|=7934
+|J|=2  |A|=7934
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7938
+|J|=0  |A|=7938
+Elapsed time is 17.024058 seconds.
+     3
+
+|J|=2712  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=6135
+|J|=900  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7839
+|J|=71  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7845
+|J|=67  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7849
+|J|=65  |A|=7849
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7956
+|J|=18  |A|=7956
+(flip)  |A|=7956
+
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7959
+|J|=16  |A|=7959
+(flip)  |A|=7964
+|J|=14  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7968
+|J|=12  |A|=7972
+|J|=10  |A|=7972
+(flip)  |A|=7977
+|J|=8  |A|=7977
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7981
+|J|=6  |A|=7981
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7984
+|J|=4  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7988
+|J|=2  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7993
+|J|=0  |A|=7993
+Elapsed time is 12.084837 seconds.
+     4
+
+|J|=2721  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=6096
+|J|=939  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7759
+|J|=97  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7773
+|J|=88  |A|=7778
+|J|=86  |A|=7778
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7921
+|J|=31  |A|=7925
+|J|=29  |A|=7925
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7934
+|J|=26  |A|=7934
+(flip)  |A|=7934
+|A|=7934
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7937
+|J|=24  |A|=7943
+|J|=20  |A|=7946
+|J|=18  |A|=7946
+(flip)  |A|=7951
+|J|=16  |A|=7951
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7955
+|J|=14  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7958
+|J|=12  |A|=7958
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7962
+|J|=10  |A|=7962
+(flip)  |A|=7966
+|J|=8  |A|=7966
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7970
+|J|=6  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7974
+|J|=4  |A|=7974
+(flip)  |A|=7978
+|J|=2  |A|=7978
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7982
+|J|=0  |A|=7982
+Elapsed time is 14.935183 seconds.
+     5
+
+|J|=2703  |A|=6107
+|J|=944  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7815
+|J|=96  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7818
+|J|=94  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7827
+|J|=88  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7830
+|J|=86  |A|=7830
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7953
+|J|=35  |A|=7953
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7955
+|J|=34  |A|=7955
+(flip)  |A|=7955
+
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7958
+|J|=32  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7963
+|J|=30  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7966
+|J|=28  |A|=7966
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7971
+|J|=26  |A|=7971
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7974
+|J|=24  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7977
+|J|=22  |A|=7977
+(flip)  |A|=7981
+|J|=20  |A|=7981
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7985
+|J|=18  |A|=7985
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7990
+|J|=16  
+0 = sol.stat
+3 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7990
+(flip)  |A|=7990
+
+Error: Global network is not consistent.
+     6
+
+|J|=2674  |A|=6050
+|J|=962  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7770
+|J|=90  |A|=7770
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7906
+|J|=38  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7909
+|J|=36  |A|=7909
+(flip)  |A|=7909
+|A|=7909
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7912
+|J|=34  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7915
+|J|=32  |A|=7915
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7922
+|J|=28  |A|=7927
+|J|=24  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7930
+|J|=22  |A|=7930
+(flip)  |A|=7939
+|J|=18  |A|=7939
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7943
+|J|=16  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7948
+|J|=14  |A|=7948
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7953
+|J|=12  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7956
+|J|=10  |A|=7956
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7959
+|J|=8  |A|=7959
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7963
+|J|=6  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7966
+|J|=4  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7969
+|J|=2  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7973
+|J|=0  |A|=7973
+Elapsed time is 14.090749 seconds.
+     7
+
+|J|=2712  |A|=6111
+|J|=918  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7828
+|J|=78  |A|=7832
+|J|=77  |A|=7832
+(flip)  |A|=7975
+|J|=18  |A|=7975
+(flip)  |A|=7975
+|A|=7978
+|J|=16  |A|=7978
+(flip)  |A|=7981
+|J|=14  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7986
+|J|=10  |A|=7986
+(flip)  |A|=7991
+|J|=8  |A|=7998
+|J|=6  |A|=8002
+|J|=4  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8006
+|J|=2  |A|=8010
+|J|=0  |A|=8010
+Elapsed time is 7.835557 seconds.
+     8
+
+|J|=2718  |A|=6044
+|J|=947  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7781
+|J|=82  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7783
+|J|=81  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7786
+|J|=79  |A|=7790
+|J|=77  |A|=7790
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7928
+|J|=23  |A|=7928
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7931
+|J|=22  |A|=7931
+(flip)  |A|=7931
+|A|=7931
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7934
+|J|=20  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7941
+|J|=18  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7945
+|J|=16  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7948
+|J|=14  |A|=7948
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7952
+|J|=12  |A|=7952
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7956
+|J|=10  |A|=7956
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7960
+|J|=8  |A|=7960
+(flip)  |A|=7964
+|J|=6  |A|=7964
+(flip)  |A|=7968
+|J|=4  |A|=7968
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7973
+|J|=2  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7978
+|J|=0  |A|=7978
+Elapsed time is 13.076196 seconds.
+     9
+
+|J|=2747  |A|=5992
+|J|=994  |A|=7758
+|J|=118  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7768
+|J|=113  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7773
+|J|=110  |A|=7773
+(flip)  |A|=7938
+|J|=42  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7947
+|J|=37  |A|=7947
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7952
+|J|=35  |A|=7952
+(flip)  |A|=7952
+
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7955
+|J|=33  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7959
+|J|=31  |A|=7964
+|J|=29  |A|=7967
+|J|=27  |A|=7967
+(flip)  |A|=7970
+|J|=25  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7973
+|J|=23  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7977
+|J|=21  |A|=7980
+|J|=19  |A|=7983
+|J|=17  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7986
+|J|=15  |A|=7986
+(flip)  |A|=7990
+|J|=13  |A|=7990
+(flip)  |A|=7994
+|J|=11  |A|=7994
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7998
+|J|=9  |A|=7998
+(flip)  |A|=8002
+|J|=7  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8005
+|J|=5  |A|=8007
+|J|=4  |A|=8007
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8013
+|J|=2  |A|=8013
+(flip)  |A|=8018
+|J|=0  |A|=8018
+Elapsed time is 15.898523 seconds.
+Warning: Wrong answers! 
+</pre><img vspace="5" hspace="5" src="weightedTest_01.png" alt=""> <img vspace="5" hspace="5" src="weightedTest_02.png" alt=""> <img vspace="5" hspace="5" src="weightedTest_03.png" alt=""> <p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2018b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+clear all; close all; clc;
+% importing the metabolic network model
+load('Recon3D_301/Recon3DModel_301.mat');
+model = Recon3DModel;
+model.rev = double(model.lb < 0);
+clear Recon3DModel;
+n = length(model.rxns);
+% setting up the LP solver to IBM CPLEX
+solver = 'ibm_cplex';
+changeCobraSolver(solver);
+% selecting a range of different magnitudes for the weights
+weights = 2.^(-4:4);
+l = length(weights);
+LP = zeros(2, l);
+runtime = zeros(3, l);
+performance = zeros(4, l);
+errors = true(3, l);
+for k = 1:l
+    disp(k);
+    % randomly sampling the set of core reactions
+    core = randsample(n, n/2);
+    % FASTCORE
+    tic;
+    coreRxn = fastCoreWeighted(core, model, weights(k)*ones(n, 1), 1e-4);
+    runtime(1, k) = toc;
+    coreRxnBool = false(n, 1);
+    coreRxnBool(coreRxn) = true;
+    performance(1, k) = sum(coreRxnBool);
+    % consistency checking
+    if all(coreRxnBool(core))
+        tempmodel.S = model.S(:, coreRxnBool);
+        tempmodel.rev = model.rev(coreRxnBool);
+        tempmodel.lb = model.lb(coreRxnBool);
+        tempmodel.ub = model.ub(coreRxnBool);
+        tempmodel.rxns = model.rxns(coreRxnBool);
+        tempmodel.c = model.c(coreRxnBool);
+        tempmodel.mets = model.mets;
+        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        if all(A.' == 1:length(A))
+            errors(1, k) = false;
+        end
+    end
+    % SWIFTCORE w/o reduction
+    tic;
+    [coreInd, numLP] = swiftcore(model.S, model.rev, core, weights(k)*ones(n, 1), false, solver);
+    runtime(2, k) = toc;
+    LP(1, k) = numLP;
+    performance(2, k) = sum(coreInd);
+    % consistency checking
+    if all(coreInd(core))
+        tempmodel.S = model.S(:, coreInd);
+        tempmodel.rev = model.rev(coreInd);
+        tempmodel.lb = model.lb(coreInd);
+        tempmodel.ub = model.ub(coreInd);
+        tempmodel.rxns = model.rxns(coreInd);
+        tempmodel.c = model.c(coreInd);
+        tempmodel.mets = model.mets;
+        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        if all(A.' == 1:length(A))
+            errors(2, k) = false;
+        end
+    end
+    % SWIFTCORE w/ reduction
+    tic;
+    [coreIndReduce, numLP] = swiftcore(model.S, model.rev, core, weights(k)*ones(n, 1), true, solver);
+    runtime(3, k) = toc;
+    LP(2, k) = numLP;
+    performance(3, k) = sum(coreIndReduce);
+    % consistency checking
+    if all(coreIndReduce(core))
+        tempmodel.S = model.S(:, coreIndReduce);
+        tempmodel.rev = model.rev(coreIndReduce);
+        tempmodel.lb = model.lb(coreIndReduce);
+        tempmodel.ub = model.ub(coreIndReduce);
+        tempmodel.rxns = model.rxns(coreIndReduce);
+        tempmodel.c = model.c(coreIndReduce);
+        tempmodel.mets = model.mets;
+        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        if all(A.' == 1:length(A))
+            errors(3, k) = false;
+        end
+    end
+    % calculating the size of the intersection of the answers of the three algorithms above
+    performance(4, k) = sum(coreIndReduce + coreInd + coreRxnBool == 3);
+end
+% consistency checking
+if any(errors, 'all')
+    warning('Wrong answers!');
+end
+% drawing boxplots for the comparison of runtimes
+figure();
+boxplot(runtime.','Notch','on','Labels',{'FASTCORE','SWIFTCORE w/o reduction','SWIFTCORE w/ reduction'});
+ylabel('runtime in seconds');
+savefig('runtimeBox');
+% drawing boxplots for the comparison of sparsity
+figure();
+boxplot(performance.','Notch','on','Labels',{'FASTCORE','SWIFTCORE w/o reduction','SWIFTCORE w/ reduction','intersection'});
+ylabel('size of the subnetwork');
+savefig('performanceBox');
+% drawing boxplots for the comparison of the number of LPs
+figure();
+boxplot(LP.','Notch','on','Labels',{'SWIFTCORE w/o reduction','SWIFTCORE w/ reduction'});
+ylabel('number of solved LPs');
+savefig('LPBox');
+##### SOURCE END #####
+--></body></html>
