@@ -77,7 +77,7 @@ n = length(model.rxns);
 solver = <span class="string">'ibm_cplex'</span>;
 changeCobraSolver(solver);
 <span class="comment">% selecting a range of different magnitudes for the weights</span>
-weights = 2.^(-4:4);
+weights = 2.^(0:15);
 l = length(weights);
 LP = zeros(2, l);
 runtime = zeros(3, l);
@@ -181,712 +181,1506 @@ nested functions, explicitly define it in the parent function.
  &gt; The solver compatibility is not tested with MATLAB R2018b.
      1
 
-|J|=2657  
+|J|=2671  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=6073
-|J|=938  
+|A|=6019
+|J|=975  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7730
-|J|=88  |A|=7730
+|A|=7772
+|J|=112  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7783
+|J|=106  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7790
+|J|=102  |A|=7794
+|J|=100  |A|=7794
+(flip)  |A|=7954
+|J|=29  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7955
+|J|=28  |A|=7955
+(flip)  |A|=7955
+|A|=7958
+|J|=26  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7961
+|J|=24  |A|=7966
+|J|=22  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7970
+|J|=20  |A|=7970
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7896
-|J|=26  |A|=7896
-(flip)  |A|=7896
-|A|=7896
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7901
-|J|=24  |A|=7901
-(flip)  |A|=7904
-|J|=22  |A|=7904
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7908
-|J|=20  |A|=7908
-(flip)  |A|=7913
-|J|=18  |A|=7913
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7917
-|J|=16  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7920
-|J|=14  |A|=7924
-|J|=12  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7928
-|J|=10  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7932
-|J|=8  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7935
-|J|=6  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7938
-|J|=4  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7942
-|J|=2  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7948
-|J|=0  |A|=7948
-Elapsed time is 12.932422 seconds.
-     2
-
-|J|=2720  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=6086
-|J|=901  |A|=7725
-|J|=98  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7745
-|J|=86  |A|=7745
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7877
-|J|=30  |A|=7877
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7879
-|J|=29  |A|=7879
-(flip)  |A|=7879
-|A|=7879
-(flip)  |A|=7883
-|J|=27  |A|=7887
-|J|=25  |A|=7887
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7890
-|J|=23  |A|=7890
-(flip)  |A|=7893
-|J|=21  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7897
-|J|=19  |A|=7897
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7901
-|J|=17  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7906
-|J|=15  |A|=7906
-(flip)  |A|=7912
-|J|=13  |A|=7912
-(flip)  |A|=7916
-|J|=11  |A|=7916
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7918
-|J|=10  |A|=7924
-|J|=8  |A|=7924
-(flip)  |A|=7928
-|J|=6  |A|=7931
-|J|=4  |A|=7934
-|J|=2  |A|=7934
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7938
-|J|=0  |A|=7938
-Elapsed time is 17.024058 seconds.
-     3
-
-|J|=2712  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=6135
-|J|=900  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7839
-|J|=71  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7845
-|J|=67  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7849
-|J|=65  |A|=7849
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7956
-|J|=18  |A|=7956
-(flip)  |A|=7956
-
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7959
-|J|=16  |A|=7959
-(flip)  |A|=7964
-|J|=14  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7968
-|J|=12  |A|=7972
-|J|=10  |A|=7972
-(flip)  |A|=7977
-|J|=8  |A|=7977
+|A|=7977
+|J|=16  |A|=7977
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
 |A|=7981
-|J|=6  |A|=7981
-(flip)  
+|J|=14  |A|=7981
+(flip)  |A|=7985
+|J|=12  |A|=7992
+|J|=10  |A|=7992
+(flip)  |A|=7995
+|J|=8  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7984
+|A|=7999
+|J|=6  |A|=8003
 |J|=4  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7988
-|J|=2  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7993
-|J|=0  |A|=7993
-Elapsed time is 12.084837 seconds.
-     4
-
-|J|=2721  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=6096
-|J|=939  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7759
-|J|=97  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7773
-|J|=88  |A|=7778
-|J|=86  |A|=7778
+|A|=8007
+|J|=2  |A|=8007
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7921
-|J|=31  |A|=7925
-|J|=29  |A|=7925
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7934
-|J|=26  |A|=7934
-(flip)  |A|=7934
-|A|=7934
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7937
-|J|=24  |A|=7943
-|J|=20  |A|=7946
-|J|=18  |A|=7946
-(flip)  |A|=7951
-|J|=16  |A|=7951
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7955
-|J|=14  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7958
-|J|=12  |A|=7958
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7962
-|J|=10  |A|=7962
-(flip)  |A|=7966
-|J|=8  |A|=7966
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7970
-|J|=6  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7974
-|J|=4  |A|=7974
-(flip)  |A|=7978
-|J|=2  |A|=7978
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7982
-|J|=0  |A|=7982
-Elapsed time is 14.935183 seconds.
-     5
-
-|J|=2703  |A|=6107
-|J|=944  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7815
-|J|=96  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7818
-|J|=94  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7827
-|J|=88  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7830
-|J|=86  |A|=7830
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7953
-|J|=35  |A|=7953
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7955
-|J|=34  |A|=7955
-(flip)  |A|=7955
-
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7958
-|J|=32  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7963
-|J|=30  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7966
-|J|=28  |A|=7966
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7971
-|J|=26  |A|=7971
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7974
-|J|=24  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7977
-|J|=22  |A|=7977
-(flip)  |A|=7981
-|J|=20  |A|=7981
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7985
-|J|=18  |A|=7985
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7990
-|J|=16  
-0 = sol.stat
-3 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7990
-(flip)  |A|=7990
-
-Error: Global network is not consistent.
-     6
-
-|J|=2674  |A|=6050
-|J|=962  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7770
-|J|=90  |A|=7770
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7906
-|J|=38  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7909
-|J|=36  |A|=7909
-(flip)  |A|=7909
-|A|=7909
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7912
-|J|=34  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7915
-|J|=32  |A|=7915
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7922
-|J|=28  |A|=7927
-|J|=24  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7930
-|J|=22  |A|=7930
-(flip)  |A|=7939
-|J|=18  |A|=7939
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7943
-|J|=16  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7948
-|J|=14  |A|=7948
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7953
-|J|=12  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7956
-|J|=10  |A|=7956
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7959
-|J|=8  |A|=7959
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7963
-|J|=6  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7966
-|J|=4  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7969
-|J|=2  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7973
-|J|=0  |A|=7973
-Elapsed time is 14.090749 seconds.
-     7
-
-|J|=2712  |A|=6111
-|J|=918  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7828
-|J|=78  |A|=7832
-|J|=77  |A|=7832
-(flip)  |A|=7975
-|J|=18  |A|=7975
-(flip)  |A|=7975
-|A|=7978
-|J|=16  |A|=7978
-(flip)  |A|=7981
-|J|=14  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7986
-|J|=10  |A|=7986
-(flip)  |A|=7991
-|J|=8  |A|=7998
-|J|=6  |A|=8002
-|J|=4  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=8006
-|J|=2  |A|=8010
+|A|=8010
 |J|=0  |A|=8010
-Elapsed time is 7.835557 seconds.
-     8
+Elapsed time is 15.530340 seconds.
+     2
 
-|J|=2718  |A|=6044
-|J|=947  
+|J|=2698  |A|=6110
+|J|=912  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7781
-|J|=82  
+|A|=7750
+|J|=99  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7783
-|J|=81  
+|A|=7754
+|J|=97  |A|=7754
+(flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7786
-|J|=79  |A|=7790
-|J|=77  |A|=7790
+|A|=7881
+|J|=41  |A|=7889
+|J|=37  |A|=7889
+(flip)  |A|=7889
+|A|=7892
+|J|=35  |A|=7892
+(flip)  |A|=7900
+|J|=31  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7904
+|J|=29  |A|=7907
+|J|=27  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7916
+|J|=23  |A|=7920
+|J|=21  |A|=7920
+(flip)  |A|=7924
+|J|=19  |A|=7924
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
 |A|=7928
-|J|=23  |A|=7928
-(flip)  
+|J|=17  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
 |A|=7931
-|J|=22  |A|=7931
-(flip)  |A|=7931
-|A|=7931
-(flip)  
+|J|=15  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
 |A|=7934
-|J|=20  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7941
-|J|=18  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7945
-|J|=16  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7948
-|J|=14  |A|=7948
+|J|=13  |A|=7934
+(flip)  |A|=7937
+|J|=11  |A|=7937
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7952
-|J|=12  |A|=7952
+|A|=7939
+|J|=10  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7943
+|J|=8  |A|=7948
+|J|=6  |A|=7952
+|J|=4  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7958
+|J|=2  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7963
+|J|=0  |A|=7963
+Elapsed time is 16.742528 seconds.
+     3
+
+|J|=2640  |A|=5984
+|J|=951  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7750
+|J|=94  |A|=7753
+|J|=93  |A|=7757
+|J|=91  |A|=7757
+(flip)  |A|=7899
+|J|=35  |A|=7907
+|J|=31  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7909
+|J|=29  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7911
+|J|=27  |A|=7911
 (flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7914
+|J|=26  |A|=7914
+(flip)  |A|=7914
+
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7919
+|J|=24  |A|=7922
+|J|=22  |A|=7927
+|J|=20  |A|=7932
+|J|=18  |A|=7936
+|J|=16  |A|=7936
+(flip)  |A|=7939
+|J|=14  |A|=7939
+(flip)  |A|=7944
+|J|=12  |A|=7949
+|J|=8  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7953
+|J|=6  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
 |A|=7956
-|J|=10  |A|=7956
+|J|=4  |A|=7956
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
 |A|=7960
-|J|=8  |A|=7960
+|J|=2  |A|=7960
 (flip)  |A|=7964
-|J|=6  |A|=7964
-(flip)  |A|=7968
-|J|=4  |A|=7968
+|J|=0  |A|=7964
+Elapsed time is 15.580455 seconds.
+     4
+
+|J|=2633  |A|=5928
+|J|=1039  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7738
+|J|=109  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7747
+|J|=104  |A|=7747
+(flip)  |A|=7897
+|J|=43  |A|=7900
+|J|=41  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7904
+|J|=39  |A|=7904
+(flip)  |A|=7904
+|A|=7904
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7973
+|A|=7908
+|J|=37  |A|=7908
+(flip)  |A|=7913
+|J|=35  |A|=7913
+(flip)  |A|=7917
+|J|=33  |A|=7917
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7921
+|J|=31  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7925
+|J|=29  |A|=7929
+|J|=27  |A|=7929
+(flip)  |A|=7932
+|J|=25  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7935
+|J|=23  |A|=7938
+|J|=21  |A|=7941
+|J|=19  |A|=7944
+|J|=17  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7948
+|J|=15  |A|=7952
+|J|=13  |A|=7952
+(flip)  |A|=7955
+|J|=11  |A|=7955
+(flip)  |A|=7957
+|J|=10  |A|=7961
+|J|=8  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7966
+|J|=6  |A|=7970
+|J|=4  |A|=7974
 |J|=2  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
 |A|=7978
 |J|=0  |A|=7978
-Elapsed time is 13.076196 seconds.
-     9
+Elapsed time is 17.217881 seconds.
+     5
 
-|J|=2747  |A|=5992
-|J|=994  |A|=7758
-|J|=118  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7768
-|J|=113  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7773
-|J|=110  |A|=7773
-(flip)  |A|=7938
-|J|=42  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7947
-|J|=37  |A|=7947
+|J|=2696  |A|=6087
+|J|=958  |A|=7805
+|J|=108  |A|=7811
+|J|=104  |A|=7821
+|J|=98  |A|=7826
+|J|=96  |A|=7826
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7952
-|J|=35  |A|=7952
-(flip)  |A|=7952
-
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7955
-|J|=33  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7959
-|J|=31  |A|=7964
-|J|=29  |A|=7967
-|J|=27  |A|=7967
-(flip)  |A|=7970
-|J|=25  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7973
-|J|=23  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7977
-|J|=21  |A|=7980
-|J|=19  |A|=7983
-|J|=17  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7986
-|J|=15  |A|=7986
-(flip)  |A|=7990
-|J|=13  |A|=7990
-(flip)  |A|=7994
-|J|=11  |A|=7994
+|A|=7978
+|J|=32  |A|=7978
+(flip)  |A|=7978
+|A|=7978
 (flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7983
+|J|=30  |A|=7983
+(flip)  |A|=7987
+|J|=28  |A|=7991
+|J|=26  |A|=7994
+|J|=24  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
 |A|=7998
-|J|=9  |A|=7998
-(flip)  |A|=8002
-|J|=7  
+|J|=22  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=8005
-|J|=5  |A|=8007
-|J|=4  |A|=8007
+|A|=8002
+|J|=20  |A|=8006
+|J|=18  |A|=8010
+|J|=16  |A|=8010
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=8013
-|J|=2  |A|=8013
+|A|=8015
+|J|=14  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8018
+|J|=12  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8022
+|J|=10  |A|=8026
+|J|=8  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8030
+|J|=6  |A|=8034
+|J|=4  |A|=8038
+|J|=2  |A|=8038
+(flip)  |A|=8041
+|J|=0  |A|=8041
+Elapsed time is 14.833334 seconds.
+     6
+
+|J|=2635  |A|=5984
+|J|=984  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7740
+|J|=99  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7742
+|J|=98  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7745
+|J|=96  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7749
+|J|=94  |A|=7749
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7915
+|J|=27  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7917
+|J|=25  |A|=7917
+(flip)  |A|=7923
+|J|=22  |A|=7923
+(flip)  |A|=7923
+|A|=7926
+|J|=20  |A|=7926
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7930
+|J|=18  |A|=7930
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7935
+|J|=16  |A|=7935
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7940
+|J|=14  |A|=7940
+(flip)  |A|=7945
+|J|=12  |A|=7945
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7948
+|J|=10  |A|=7952
+|J|=8  |A|=7952
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7956
+|J|=6  |A|=7956
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7960
+|J|=4  |A|=7962
+|J|=2  |A|=7962
+(flip)  |A|=7966
+|J|=0  |A|=7966
+Elapsed time is 13.505687 seconds.
+     7
+
+|J|=2696  |A|=5953
+|J|=966  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7728
+|J|=102  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7747
+|J|=94  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7755
+|J|=88  |A|=7755
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7908
+|J|=28  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7914
+|J|=24  |A|=7914
+(flip)  |A|=7914
+|A|=7914
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7920
+|J|=20  |A|=7923
+|J|=18  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7927
+|J|=16  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7930
+|J|=14  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7934
+|J|=12  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7940
+|J|=10  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7947
+|J|=8  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7951
+|J|=6  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7954
+|J|=4  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7958
+|J|=2  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7962
+|J|=0  |A|=7962
+Elapsed time is 11.695022 seconds.
+     8
+
+|J|=2739  |A|=6111
+|J|=897  |A|=7802
+|J|=90  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7806
+|J|=88  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7817
+|J|=82  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7826
+|J|=76  |A|=7826
+(flip)  |A|=7947
+|J|=26  |A|=7947
+(flip)  |A|=7950
+|J|=24  |A|=7950
+(flip)  |A|=7950
+
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7957
+|J|=22  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7961
+|J|=20  |A|=7961
+(flip)  |A|=7965
+|J|=18  |A|=7970
+|J|=16  |A|=7970
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7973
+|J|=14  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7978
+|J|=12  |A|=7978
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7982
+|J|=10  |A|=7988
+|J|=8  |A|=7988
+(flip)  |A|=7995
+|J|=6  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7999
+|J|=4  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8002
+|J|=2  |A|=8002
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8006
+|J|=0  |A|=8006
+Elapsed time is 13.004142 seconds.
+     9
+
+|J|=2673  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=6043
+|J|=940  |A|=7760
+|J|=82  |A|=7780
+|J|=73  |A|=7787
+|J|=69  |A|=7787
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7921
+|J|=24  |A|=7921
+(flip)  |A|=7921
+
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7925
+|J|=22  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7928
+|J|=20  |A|=7928
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7935
+|J|=16  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7939
+|J|=14  |A|=7943
+|J|=12  |A|=7943
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7946
+|J|=10  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7953
+|J|=8  |A|=7953
+(flip)  |A|=7959
+|J|=6  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7963
+|J|=4  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7967
+|J|=2  |A|=7971
+|J|=0  |A|=7971
+Elapsed time is 11.054301 seconds.
+    10
+
+|J|=2668  |A|=6139
+|J|=881  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7764
+|J|=84  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7773
+|J|=81  |A|=7777
+|J|=79  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7785
+|J|=75  |A|=7785
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7885
+|J|=36  |A|=7885
+(flip)  |A|=7897
+|J|=30  |A|=7897
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7901
+|J|=28  |A|=7901
+(flip)  |A|=7901
+
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7906
+|J|=26  |A|=7910
+|J|=24  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7915
+|J|=22  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7919
+|J|=20  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7923
+|J|=18  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7927
+|J|=16  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7931
+|J|=14  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7937
+|J|=12  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7940
+|J|=10  |A|=7940
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7945
+|J|=8  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7948
+|J|=6  |A|=7952
+|J|=4  |A|=7955
+|J|=2  |A|=7959
+|J|=0  |A|=7959
+Elapsed time is 13.491983 seconds.
+    11
+
+|J|=2706  |A|=6098
+|J|=971  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7783
+|J|=110  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7785
+|J|=109  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7788
+|J|=107  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7791
+|J|=105  |A|=7791
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7934
+|J|=47  |A|=7934
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7948
+|J|=42  |A|=7948
+(flip)  |A|=7956
+|J|=36  |A|=7956
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7960
+|J|=34  |A|=7960
+(flip)  |A|=7960
+
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7964
+|J|=32  |A|=7969
+|J|=30  |A|=7969
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7972
+|J|=28  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7976
+|J|=26  |A|=7976
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7980
+|J|=24  |A|=7980
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7984
+|J|=22  |A|=7984
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7989
+|J|=20  |A|=7989
+(flip)  |A|=7993
+|J|=18  |A|=7993
+(flip)  |A|=7996
+|J|=16  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8000
+|J|=14  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8003
+|J|=12  |A|=8003
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8008
+|J|=10  |A|=8011
+|J|=8  |A|=8014
+|J|=6  |A|=8014
 (flip)  |A|=8018
-|J|=0  |A|=8018
-Elapsed time is 15.898523 seconds.
-Warning: Wrong answers! 
+|J|=4  |A|=8018
+(flip)  |A|=8022
+|J|=2  |A|=8022
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8026
+|J|=0  |A|=8026
+Elapsed time is 17.590381 seconds.
+    12
+
+|J|=2705  |A|=5997
+|J|=963  |A|=7784
+|J|=83  |A|=7790
+|J|=80  |A|=7793
+|J|=78  |A|=7793
+(flip)  
+0 = sol.stat
+3 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7793
+
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7825
+|J|=63  |A|=7834
+|J|=59  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7836
+|J|=58  |A|=7836
+(flip)  |A|=7846
+|J|=53  |A|=7851
+|J|=50  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7853
+|J|=49  |A|=7853
+(flip)  |A|=7856
+|J|=47  |A|=7856
+(flip)  |A|=7859
+|J|=45  |A|=7859
+(flip)  |A|=7864
+|J|=43  |A|=7864
+(flip)  |A|=7869
+|J|=41  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7872
+|J|=40  |A|=7875
+|J|=39  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7879
+|J|=38  |A|=7883
+|J|=37  |A|=7883
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7889
+|J|=35  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7895
+|J|=33  |A|=7897
+|J|=32  |A|=7900
+|J|=31  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7903
+|J|=30  |A|=7909
+|J|=28  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7912
+|J|=27  |A|=7916
+|J|=26  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7919
+|J|=25  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7922
+|J|=23  |A|=7922
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7925
+|J|=22  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7927
+|J|=21  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7930
+|J|=20  |A|=7932
+|J|=19  |A|=7934
+|J|=18  |A|=7934
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7938
+|J|=16  |A|=7940
+|J|=15  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7942
+|J|=14  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7944
+|J|=13  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7946
+|J|=12  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7950
+|J|=11  |A|=7950
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7954
+|J|=9  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7961
+|J|=7  |A|=7964
+|J|=6  |A|=7968
+|J|=5  |A|=7970
+|J|=4  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7972
+|J|=3  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7974
+|J|=2  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7976
+|J|=1  |A|=7980
+|J|=0  |A|=7980
+Elapsed time is 29.107280 seconds.
+    13
+
+|J|=2712  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=6178
+|J|=914  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7799
+|J|=107  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7806
+|J|=103  |A|=7806
+(flip)  |A|=7948
+|J|=41  |A|=7948
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7950
+|J|=40  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7955
+|J|=36  |A|=7955
+(flip)  |A|=7955
+
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7960
+|J|=34  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7963
+|J|=32  |A|=7963
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7968
+|J|=28  |A|=7968
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7975
+|J|=26  |A|=7975
+(flip)  |A|=7979
+|J|=24  |A|=7979
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7986
+|J|=20  |A|=7986
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7990
+|J|=18  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7994
+|J|=16  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7998
+|J|=14  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8002
+|J|=12  |A|=8002
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8007
+|J|=10  |A|=8007
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8011
+|J|=8  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8014
+|J|=6  |A|=8014
+(flip)  |A|=8018
+|J|=4  |A|=8018
+(flip)  |A|=8022
+|J|=2  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8025
+|J|=0  |A|=8025
+Elapsed time is 15.704594 seconds.
+    14
+
+|J|=2715  |A|=5973
+|J|=960  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7694
+|J|=108  |A|=7708
+|J|=98  |A|=7708
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7869
+|J|=28  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7878
+|J|=24  |A|=7878
+(flip)  |A|=7878
+|A|=7878
+(flip)  |A|=7881
+|J|=22  |A|=7881
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7885
+|J|=20  |A|=7885
+(flip)  |A|=7893
+|J|=16  |A|=7893
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7898
+|J|=14  |A|=7898
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7903
+|J|=12  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7909
+|J|=10  |A|=7913
+|J|=8  |A|=7913
+(flip)  |A|=7919
+|J|=6  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7926
+|J|=4  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7930
+|J|=2  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7932
+|J|=0  |A|=7932
+Elapsed time is 10.773698 seconds.
+    15
+
+|J|=2625  |A|=5903
+|J|=1012  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7672
+|J|=114  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7675
+|J|=112  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7683
+|J|=108  |A|=7683
+(flip)  
+0 = sol.stat
+3 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7683
+|A|=7724
+|J|=94  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7739
+|J|=88  |A|=7742
+|J|=86  |A|=7756
+|J|=77  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7760
+|J|=76  |A|=7767
+|J|=74  |A|=7767
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7770
+|J|=72  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7774
+|J|=70  |A|=7777
+|J|=69  |A|=7782
+|J|=68  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7787
+|J|=65  |A|=7793
+|J|=63  |A|=7796
+|J|=62  |A|=7799
+|J|=61  |A|=7799
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7806
+|J|=58  |A|=7811
+|J|=56  |A|=7813
+|J|=55  |A|=7813
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7816
+|J|=53  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7820
+|J|=52  |A|=7825
+|J|=49  |A|=7825
+(flip)  |A|=7829
+|J|=47  |A|=7831
+|J|=46  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7833
+|J|=45  |A|=7836
+|J|=44  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7838
+|J|=43  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7841
+|J|=42  |A|=7844
+|J|=40  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7847
+|J|=38  |A|=7847
+(flip)  |A|=7854
+|J|=36  |A|=7856
+|J|=35  |A|=7858
+|J|=34  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7860
+|J|=33  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7863
+|J|=32  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7866
+|J|=30  |A|=7871
+|J|=29  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7873
+|J|=28  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7876
+|J|=27  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7882
+|J|=25  |A|=7882
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7887
+|J|=23  |A|=7887
+(flip)  |A|=7891
+|J|=21  |A|=7893
+|J|=20  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7896
+|J|=18  |A|=7898
+|J|=17  |A|=7899
+|J|=16  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7901
+|J|=15  |A|=7901
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7905
+|J|=12  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7907
+|J|=11  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7911
+|J|=10  |A|=7911
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7915
+|J|=8  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7917
+|J|=7  |A|=7919
+|J|=6  |A|=7921
+|J|=5  |A|=7923
+|J|=4  |A|=7923
+(flip)  |A|=7927
+|J|=2  |A|=7931
+|J|=1  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7935
+|J|=0  |A|=7935
+Elapsed time is 33.821791 seconds.
+    16
+
+|J|=2719  |A|=6189
+|J|=900  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7802
+|J|=90  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7809
+|J|=85  |A|=7815
+|J|=81  |A|=7815
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7963
+|J|=21  |A|=7963
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7965
+|J|=20  |A|=7965
+(flip)  |A|=7965
+|A|=7965
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7969
+|J|=18  |A|=7969
+(flip)  |A|=7974
+|J|=16  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7977
+|J|=14  |A|=7977
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7981
+|J|=12  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7984
+|J|=10  |A|=7984
+(flip)  |A|=7988
+|J|=8  |A|=7988
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7992
+|J|=6  |A|=7995
+|J|=4  |A|=7995
+(flip)  |A|=7999
+|J|=2  |A|=7999
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8003
+|J|=0  |A|=8003
+Elapsed time is 12.237235 seconds.
 </pre><img vspace="5" hspace="5" src="weightedTest_01.png" alt=""> <img vspace="5" hspace="5" src="weightedTest_02.png" alt=""> <img vspace="5" hspace="5" src="weightedTest_03.png" alt=""> <p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2018b</a><br></p></div><!--
 ##### SOURCE BEGIN #####
 clear all; close all; clc;
@@ -900,7 +1694,7 @@ n = length(model.rxns);
 solver = 'ibm_cplex';
 changeCobraSolver(solver);
 % selecting a range of different magnitudes for the weights
-weights = 2.^(-4:4);
+weights = 2.^(0:15);
 l = length(weights);
 LP = zeros(2, l);
 runtime = zeros(3, l);

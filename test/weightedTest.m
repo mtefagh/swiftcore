@@ -9,7 +9,7 @@ n = length(model.rxns);
 solver = 'ibm_cplex';
 changeCobraSolver(solver);
 % selecting a range of different magnitudes for the weights
-weights = 2.^(-4:4);
+weights = 2.^(0:15);
 l = length(weights);
 LP = zeros(2, l);
 runtime = zeros(3, l);
