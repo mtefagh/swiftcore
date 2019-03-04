@@ -1,5 +1,26 @@
 function result = blocked(S, rev, solver)
-%% the currently available options for the LP solver are 'gurobi', 'linprog', and 'cplex'
+% blocked finds all the irreversible blocked reactions and is utilized in swiftcc
+%
+% USAGE:
+%
+%    result = blocked(S, rev, solver)
+%   
+% INPUTS:
+%    S:         the associated sparse stoichiometric matrix
+%    rev:       the 0-1 vector with 1's corresponding to the reversible reactions
+%    solver:    the LP solver to be used; the currently available options are
+%               'gurobi', 'linprog', and 'cplex' with the default value of 
+%               'linprog'. It fallbacks to the COBRA LP solver interface if 
+%               another supported solver is called.
+%
+% OUTPUT:
+%    result:    the result returned by the LP solver; among the last n entries, 
+%               all the -1 entries are blocked, and the other entries are zero.
+%               The first m entries are its fictitious metabolite certificate.
+%
+% .. Authors:
+%       - Mojtaba Tefagh, Stephen P. Boyd, 2019, Stanford University
+
     [m, n] = size(S);
     irev = m + find(rev == 0);
     model.obj = zeros(m+n, 1);
@@ -11,14 +32,14 @@ function result = blocked(S, rev, solver)
     model.lb = [-Inf(m, 1); zeros(n, 1)];
     model.lb(irev) = -1;
     model.ub = [Inf(m, 1); zeros(n, 1)];
-    if strcmp(solver, 'gurobi')
+    if strcmp(solver, 'gurobi') % gurobi
         params.outputflag = 0;
         result = gurobi(model, params);
         if ~strcmp(result.status, 'OPTIMAL')
             warning('Optimization is unstable!');
             fprintf('Optimization returned status: %s\n', result.status);
         end
-    elseif strcmp(solver, 'linprog')
+    elseif strcmp(solver, 'linprog') % linprog
         problem.f = model.obj;
         problem.Aineq = model.A(rev == 0, :);
         problem.bineq = model.rhs(rev == 0);
@@ -33,7 +54,7 @@ function result = blocked(S, rev, solver)
             warning('Optimization is unstable!');
             fprintf('Optimization returned status: %d\n', result.status);
         end
-    elseif strcmp(solver, 'cplex')
+    elseif strcmp(solver, 'cplex') % cplex
         problem.f = model.obj;
         problem.Aineq = model.A(rev == 0, :);
         problem.bineq = model.rhs(rev == 0);
@@ -46,7 +67,7 @@ function result = blocked(S, rev, solver)
             warning('Optimization is unstable!');
             fprintf('Optimization returned status: %d\n', result.status);
         end
-    else
+    else % COBRA
         model.b = model.rhs;
         model.c = model.obj;
         model.osense = 1;

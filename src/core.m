@@ -1,5 +1,27 @@
 function flux = core(S, rev, blocked, weights, solver)
-%% the currently available options for the LP solver are 'gurobi', 'linprog', and 'cplex'
+% core finds a feasible flux distribution to unblock a given list of blocked 
+% reactions and is utilized in swiftcore
+%
+% USAGE:
+%
+%    flux = core(S, rev, blocked, weights, solver)
+%
+% INPUTS:
+%    S:            the associated sparse stoichiometric matrix
+%    rev:          the 0-1 vector with 1's corresponding to the reversible reactions
+%    blocked:      the 0-1 vector with 1's corresponding to the blocked reactions
+%    weights:      weight vector for the penalties associated with each reaction
+%    solver:       the LP solver to be used; the currently available options are
+%                  'gurobi', 'linprog', and 'cplex' with the default value of 
+%                  'linprog'. It fallbacks to the COBRA LP solver interface if 
+%                   another supported solver is called.
+%
+% OUTPUT:
+%    flux:    a feasible flux distribution
+%
+% .. Authors:
+%       - Mojtaba Tefagh, Stephen P. Boyd, 2019, Stanford University
+
     [m, n] = size(S);
     dense = zeros(n, 1);
     dense(blocked == 1) = normrnd(0, 1, [sum(blocked), 1]);
@@ -24,7 +46,7 @@ function flux = core(S, rev, blocked, weights, solver)
     model.ub = Inf(n, 1);
     model.ub(blocked == 1) = 1;
     model.ub = [model.ub; Inf(k+l, 1)];
-    if strcmp(solver, 'gurobi')
+    if strcmp(solver, 'gurobi') % gurobi
         params.outputflag = 0;
         result = gurobi(model, params);
         if strcmp(result.status, 'OPTIMAL')
@@ -32,7 +54,7 @@ function flux = core(S, rev, blocked, weights, solver)
         else
             warning('Optimization was stopped with status %s\n', result.status);
         end
-    elseif strcmp(solver, 'linprog')
+    elseif strcmp(solver, 'linprog') % linprog
         problem.f = model.obj;
         problem.Aineq = -model.A(m+1:m+2*k, :);
         problem.bineq = model.rhs(m+1:m+2*k);
@@ -48,7 +70,7 @@ function flux = core(S, rev, blocked, weights, solver)
         else
             warning('Optimization was stopped with status %d\n', result.status);
         end
-    elseif strcmp(solver, 'cplex')
+    elseif strcmp(solver, 'cplex') % cplex
         problem.f = model.obj;
         problem.Aineq = -model.A(m+1:m+2*k, :);
         problem.bineq = model.rhs(m+1:m+2*k);
@@ -62,7 +84,7 @@ function flux = core(S, rev, blocked, weights, solver)
         else
             warning('Optimization was stopped with status %d\n', result.status);
         end
-    else
+    else % COBRA
         model.b = model.rhs;
         model.c = model.obj;
         model.osense = 1;

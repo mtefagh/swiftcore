@@ -1,4 +1,30 @@
 function component = partition(model, solver, algorithm)
+% swiftcc++ and fastcc++ augment swiftcc and fastcc by this preprocess
+%
+% USAGE:
+%
+%    component = partition(model, solver, algorithm)
+%
+% INPUTS:
+%    model:        the metabolic network reconstruction
+%                    * .S - the associated sparse stoichiometric matrix
+%                    * .lb - feasible flux distribution lower bound
+%                    * .ub - feasible flux distribution uppper bound
+%                    * .rxns - cell array of reaction abbreviations
+%                    * .rev - the 0-1 indicator vector of the reversible reactions
+%    solver:       the LP solver to be used; the currently available options 
+%                  are 'gurobi', 'linprog', and 'cplex' with the default value 
+%                  of 'linprog'. It fallbacks to the COBRA LP solver interface 
+%                  if another supported solver is called.
+%    algorithm:    the backend algorithm to be utilized between 'swift' and 'fast'
+%
+% OUTPUT:
+%    component:    the index set of the reactions constituting the maximum  
+%                  flux consistent metabolic subnetwork
+%
+% .. Authors:
+%       - Mojtaba Tefagh, Stephen P. Boyd, 2019, Stanford University
+
     S = model.S;
     rev = model.rev;
     lb = model.lb;
@@ -6,6 +32,8 @@ function component = partition(model, solver, algorithm)
     c = model.c;
     rxns = model.rxns;
     [m, n] = size(S);
+    
+    %% constructing the directed graph
     DG = zeros(m+1);
     for i = 1:n
         head = S(:, i) > 0;
@@ -21,13 +49,19 @@ function component = partition(model, solver, algorithm)
             DG(tail, head) = 1;
         end
     end
+    
+    %% finding strongly or weakly connected components in the graph
     DG = sparse(DG);
     [~, C] = graphconncomp(DG, 'Directed', true);
     C = C(1:end-1);
+    
+    %% finding weakly connected components in the graph
     if range(C) == 0
         [~, C] = graphconncomp(max(DG, DG.'), 'Directed', false);
         C = C(1:end-1);
     end
+    
+    %% partitioning the metabolic network
     component = zeros(n, 1);
     for i = 1:n
         v = C(S(:, i) ~= 0);

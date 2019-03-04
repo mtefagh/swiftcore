@@ -1,26 +1,48 @@
 function [reconstruction, LP] = swiftcore(S, rev, coreInd, weights, reduction, varargin)
-%% Usage
-%  reconstruction = swiftcore(S, rev, coreInd, weights, reduction [, solver])
-%   * Inputs:
-%   - S: the associated sparse stoichiometric matrix
-%   - rev: the 0-1 vector with 1's corresponding to the reversible reactions
-%   - coreInd: the set of indices corresponding to the core reactions
-%   - weights: weight vector for the penalties associated with each reaction
-%   - reduction: boolean enabling the metabolic network reduction preprocess 
-%   - solver: the LP solver to be used; the currently available options are
-%   'gurobi', 'linprog', and 'cplex' with the default value of 'linprog'
-%   * Outputs:
-%   - reconstruction: the 0-1 indicator vector of the reactions constituting 
-%   the consistent metabolic network reconstructed from the core reactions
+% swifcore is an even faster version of fastcore
+%
+% USAGE:
+%
+%    [reconstruction, LP] = swiftcore(S, rev, coreInd, weights, reduction [, solver])
+%
+% INPUTS:
+%    S:            the associated sparse stoichiometric matrix
+%    rev:          the 0-1 vector with 1's corresponding to the reversible reactions
+%    coreInd:      the set of indices corresponding to the core reactions
+%    weights:      weight vector for the penalties associated with each reaction
+%    reduction:    boolean enabling the metabolic network reduction preprocess 
+% 
+% OPTIONAL INPUT:
+%    solver:    the LP solver to be used; the currently available options are
+%               'gurobi', 'linprog', and 'cplex' with the default value of 
+%               'linprog'. It fallbacks to the COBRA LP solver interface if 
+%               another supported solver is called.
+%
+% OUTPUTS:
+%    reconstruction:    the 0-1 indicator vector of the reactions constituting 
+%                       the consistent metabolic network reconstructed from the 
+%                       core reactions
+%    LP:                the number of solved LPs
+%
+% NOTE:
+%
+%    For the choice of the weight vector, use c*ones(n, 1) where c is an
+%    arbitrary constant c > 1 if you have no preference over reactions.
+%
+% .. Authors:
+%       - Mojtaba Tefagh, Stephen P. Boyd, 2019, Stanford University
+
+    [m, n] = size(S);
+    reacNum = (1:n).';
+    fullCouplings = (1:n).';
+    
     %% setting up the LP solver
     if ~isempty(varargin)
         solver = varargin{1};
     else
         solver = 'linprog';
     end
-    [m, n] = size(S);
-    reacNum = (1:n).';
-    fullCouplings = (1:n).';
+    
     %% finding the trivial full coupling relations if the reduction flag is true
     while reduction
         reduction = false;
@@ -55,6 +77,7 @@ function [reconstruction, LP] = swiftcore(S, rev, coreInd, weights, reduction, v
     end
     S(:, rev == -1) = -S(:, rev == -1);
     rev(rev == -1) = 0;
+    
     %% the main algorithm
     weights(ismember(reacNum, coreInd)) = 0;
     % the zero-tolerance parameter is the smallest flux value that is considered nonzero
