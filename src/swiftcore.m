@@ -1,4 +1,4 @@
-function [reconstruction, LP] = swiftcore(S, rev, coreInd, weights, reduction, varargin)
+function [reconstruction, LP] = swiftcore(model, coreInd, weights, reduction, varargin)
 % swifcore is an even faster version of fastcore
 %
 % USAGE:
@@ -6,8 +6,11 @@ function [reconstruction, LP] = swiftcore(S, rev, coreInd, weights, reduction, v
 %    [reconstruction, LP] = swiftcore(S, rev, coreInd, weights, reduction [, solver])
 %
 % INPUTS:
-%    S:            the associated sparse stoichiometric matrix
-%    rev:          the 0-1 vector with 1's corresponding to the reversible reactions
+%    model:        the metabolic network with fields:
+%                    * .S - the associated sparse stoichiometric matrix
+%                    * .rev - the 0-1 indicator vector of the reversible reactions
+%                    * .rxns - the cell array of reaction abbreviations
+%                    * .mets - the cell array of metabolite abbreviations
 %    coreInd:      the set of indices corresponding to the core reactions
 %    weights:      weight vector for the penalties associated with each reaction
 %    reduction:    boolean enabling the metabolic network reduction preprocess 
@@ -19,8 +22,7 @@ function [reconstruction, LP] = swiftcore(S, rev, coreInd, weights, reduction, v
 %               another supported solver is called.
 %
 % OUTPUTS:
-%    reconstruction:    the 0-1 indicator vector of the reactions constituting 
-%                       the consistent metabolic network reconstructed from the 
+%    reconstruction:    the consistent metabolic network reconstructed from the 
 %                       core reactions
 %    LP:                the number of solved LPs
 %
@@ -32,6 +34,8 @@ function [reconstruction, LP] = swiftcore(S, rev, coreInd, weights, reduction, v
 % .. Authors:
 %       - Mojtaba Tefagh, Stephen P. Boyd, 2019, Stanford University
 
+    S = model.S;
+    rev = model.rev;
     [m, n] = size(S);
     reacNum = (1:n).';
     fullCouplings = (1:n).';
@@ -110,4 +114,6 @@ function [reconstruction, LP] = swiftcore(S, rev, coreInd, weights, reduction, v
         end
     end
     reconstruction = ismember(fullCouplings, reacNum(weights == 0));
+    reconstruction = removeRxns(model, model.rxns(~reconstruction));
+    reconstruction = removeUnusedGenes(reconstruction);
 end

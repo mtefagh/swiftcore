@@ -15,9 +15,9 @@ for k = 1:105
     % randomly sampling the set of core reactions
     core = randsample(n, 100*k);
     % FASTCORE
-    tic;
+    time1 = tic;
     coreRxn = fastcore(core, model, 1e-4);
-    runtime(1, k) = toc;
+    runtime(1, k) = toc(time1);
     coreRxnBool = false(n, 1);
     coreRxnBool(coreRxn) = true;
     performance(1, k) = sum(coreRxnBool);
@@ -36,9 +36,9 @@ for k = 1:105
         end
     end
     % SWIFTCORE w/o reduction
-    tic;
+    time2 = tic;
     [coreInd, numLP] = swiftcore(model.S, model.rev, core, ones(n, 1), false, solver);
-    runtime(2, k) = toc;
+    runtime(2, k) = toc(time2);
     LP(1, k) = numLP;
     performance(2, k) = sum(coreInd);
     % consistency checking
@@ -56,9 +56,9 @@ for k = 1:105
         end
     end
     % SWIFTCORE w/ reduction
-    tic;
+    time3 = tic;
     [coreIndReduce, numLP] = swiftcore(model.S, model.rev, core, ones(n, 1), true, solver);
-    runtime(3, k) = toc;
+    runtime(3, k) = toc(time3);
     LP(2, k) = numLP;
     performance(3, k) = sum(coreIndReduce);
     % consistency checking
