@@ -1,4 +1,4 @@
-function [reconstruction, LP] = swiftcore(model, coreInd, weights, reduction, varargin)
+function [reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, reduction, varargin)
 % swifcore is an even faster version of fastcore
 %
 % USAGE:
@@ -24,6 +24,8 @@ function [reconstruction, LP] = swiftcore(model, coreInd, weights, reduction, va
 % OUTPUTS:
 %    reconstruction:    the consistent metabolic network reconstructed from the 
 %                       core reactions
+%    reconInd:          the 0-1 indicator vector of the reactions constituting
+%                       the reconstruction
 %    LP:                the number of solved LPs
 %
 % NOTE:
@@ -113,7 +115,7 @@ function [reconstruction, LP] = swiftcore(model, coreInd, weights, reduction, va
             weights = weights/2;
         end
     end
-    reconstruction = ismember(fullCouplings, reacNum(weights == 0));
-    reconstruction = removeRxns(model, model.rxns(~reconstruction));
+    reconInd = ismember(fullCouplings, reacNum(weights == 0));
+    reconstruction = removeRxns(model, model.rxns(~reconInd));
     reconstruction = removeUnusedGenes(reconstruction);
 end

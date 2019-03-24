@@ -30,14 +30,14 @@ for k = 1:105
         tempmodel.rxns = model.rxns(coreRxnBool);
         tempmodel.c = model.c(coreRxnBool);
         tempmodel.mets = model.mets;
-        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        A = fastcc(tempmodel, 1e-4);
         if all(A.' == 1:length(A))
             errors(1, k) = false;
         end
     end
     % SWIFTCORE w/o reduction
     time2 = tic;
-    [coreInd, numLP] = swiftcore(model.S, model.rev, core, ones(n, 1), false, solver);
+    [~, coreInd, numLP] = swiftcore(model, core, ones(n, 1), false, solver);
     runtime(2, k) = toc(time2);
     LP(1, k) = numLP;
     performance(2, k) = sum(coreInd);
@@ -50,14 +50,14 @@ for k = 1:105
         tempmodel.rxns = model.rxns(coreInd);
         tempmodel.c = model.c(coreInd);
         tempmodel.mets = model.mets;
-        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        A = fastcc(tempmodel, 1e-4);
         if all(A.' == 1:length(A))
             errors(2, k) = false;
         end
     end
     % SWIFTCORE w/ reduction
     time3 = tic;
-    [coreIndReduce, numLP] = swiftcore(model.S, model.rev, core, ones(n, 1), true, solver);
+    [~, coreIndReduce, numLP] = swiftcore(model, core, ones(n, 1), true, solver);
     runtime(3, k) = toc(time3);
     LP(2, k) = numLP;
     performance(3, k) = sum(coreIndReduce);
@@ -70,7 +70,7 @@ for k = 1:105
         tempmodel.rxns = model.rxns(coreIndReduce);
         tempmodel.c = model.c(coreIndReduce);
         tempmodel.mets = model.mets;
-        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        A = fastcc(tempmodel, 1e-4);
         if all(A.' == 1:length(A))
             errors(3, k) = false;
         end
