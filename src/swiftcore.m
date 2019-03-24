@@ -36,6 +36,7 @@ function [reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, red
 % .. Authors:
 %       - Mojtaba Tefagh, Stephen P. Boyd, 2019, Stanford University
 
+    LP = 0;
     S = model.S;
     rev = model.rev;
     [m, n] = size(S);
@@ -83,21 +84,24 @@ function [reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, red
     end
     S(:, rev == -1) = -S(:, rev == -1);
     rev(rev == -1) = 0;
+    model.lb = zeros(length(rev));
+    model.lb(rev == 1) = -1;
+    model.ub = ones(length(rev));
     
     %% the main algorithm
     weights(ismember(reacNum, coreInd)) = 0;
+    n_ = length(weights);
     % the zero-tolerance parameter is the smallest flux value that is considered nonzero
     tol = norm(S, 'fro')*eps(class(S));
-    % phase one of unblocking the irreversible reactions
-    n_ = length(weights);
-    blocked = zeros(n_, 1);
-    LP = 1;
-    flux = core(S, rev, blocked, weights, solver);
-    weights(abs(flux) > tol) = 0;
-    % identifying the blocked reversible reactions
     if n == n_
         blocked = ismember(reacNum, coreInd);
     else
+        % phase one of unblocking the irreversible reactions
+        blocked = zeros(n_, 1);
+        LP = LP + 1;
+        flux = core(model, blocked, weights, solver);
+        weights(abs(flux) > tol) = 0;
+        % identifying the blocked reversible reactions
         [Q, R, ~] = qr(transpose(S(:, weights == 0)));
         Z = Q(:, sum(abs(diag(R)) > tol)+1:end);
         blocked(weights == 0) = diag(Z*Z.') < tol^2;
@@ -107,7 +111,7 @@ function [reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, red
         % incrementing the core set until no reversible blocked reaction remains
         blockedSize = sum(blocked);
         LP = LP + 1;
-        flux = core(S, rev, blocked, weights, solver);
+        flux = core(model, blocked, weights, solver);
         weights(abs(flux) > tol) = 0;
         blocked(abs(flux) > tol) = 0;
         % adjust the weights if the number of the blocked reactions is no longer reduced by more than half
