@@ -84,6 +84,8 @@ function [reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, red
     end
     S(:, rev == -1) = -S(:, rev == -1);
     rev(rev == -1) = 0;
+    model.S = S;
+    model.rev = rev;
     model.lb = zeros(length(rev));
     model.lb(rev == 1) = -1;
     model.ub = ones(length(rev));
@@ -120,6 +122,7 @@ function [reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, red
         end
     end
     reconInd = ismember(fullCouplings, reacNum(weights == 0));
-    reconstruction = removeRxns(model, model.rxns(~reconInd));
-    reconstruction = removeUnusedGenes(reconstruction);
+    reconstruction = reconInd;
+    %reconstruction = removeRxns(model, model.rxns(~reconInd));
+    %reconstruction = removeUnusedGenes(reconstruction);
 end
