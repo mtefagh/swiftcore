@@ -8,7 +8,8 @@ function [reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, red
 % INPUTS:
 %    model:        the metabolic network with fields:
 %                    * .S - the associated sparse stoichiometric matrix
-%                    * .rev - the 0-1 indicator vector of the reversible reactions
+%                    * .lb - lower bounds on reaction rates
+%                    * .ub - lower bounds on reaction rates
 %                    * .rxns - the cell array of reaction abbreviations
 %                    * .mets - the cell array of metabolite abbreviations
 %    coreInd:      the set of indices corresponding to the core reactions
@@ -36,10 +37,11 @@ function [reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, red
 % .. Authors:
 %       - Mojtaba Tefagh, Stephen P. Boyd, 2019, Stanford University
 
-    LP = 0;
     S = model.S;
-    rev = model.rev;
     [m, n] = size(S);
+    rev = ones(n, 1);
+    rev(model.lb == 0) = 0;
+    rev(model.ub == 0) = -1;
     reacNum = (1:n).';
     fullCouplings = (1:n).';
     
@@ -86,27 +88,27 @@ function [reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, red
     rev(rev == -1) = 0;
     model.S = S;
     model.rev = rev;
-    model.lb = zeros(length(rev));
-    model.lb(rev == 1) = -1;
-    model.ub = ones(length(rev));
+    model.lb = model.lb(reacNum);
+    model.ub = model.ub(reacNum);
     
     %% the main algorithm
     weights(ismember(reacNum, coreInd)) = 0;
     n_ = length(weights);
     % the zero-tolerance parameter is the smallest flux value that is considered nonzero
     tol = norm(S, 'fro')*eps(class(S));
+    % phase one of unblocking the irreversible reactions
+    blocked = zeros(n_, 1);
+    LP = 1;
+    flux = core(model, blocked, weights, solver);
+    weights(abs(flux) > tol) = 0;
     if n == n_
         blocked = ismember(reacNum, coreInd);
+        blocked(abs(flux) > tol) = false;
     else
-        % phase one of unblocking the irreversible reactions
-        blocked = zeros(n_, 1);
-        LP = LP + 1;
-        flux = core(model, blocked, weights, solver);
-        weights(abs(flux) > tol) = 0;
         % identifying the blocked reversible reactions
         [Q, R, ~] = qr(transpose(S(:, weights == 0)));
         Z = Q(:, sum(abs(diag(R)) > tol)+1:end);
-        blocked(weights == 0) = diag(Z*Z.') < tol^2;
+        blocked(weights == 0) = vecnorm(Z, 2, 2) < tol;
     end
     % phase two of unblocking the reversible reactions
     while any(blocked)
