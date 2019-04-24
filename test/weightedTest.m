@@ -42,7 +42,7 @@ for k = 1:l
     end
     % SWIFTCORE w/o reduction
     time2 = tic;
-    [~, coreInd, numLP] = swiftcore(model, core, weights(k)*ones(n, 1), false, solver);
+    [~, coreInd, numLP] = swiftcore(model, core, weights(k)*ones(n, 1), 1e-10, false, solver);
     runtime(2, k) = toc(time2);
     LP(1, k) = numLP;
     performance(2, k) = sum(coreInd);
@@ -62,7 +62,7 @@ for k = 1:l
     end
     % SWIFTCORE w/ reduction
     time3 = tic;
-    [~, coreIndReduce, numLP] = swiftcore(model, core, weights(k)*ones(n, 1), true, solver);
+    [~, coreIndReduce, numLP] = swiftcore(model, core, weights(k)*ones(n, 1), 1e-10, true, solver);
     runtime(3, k) = toc(time3);
     LP(2, k) = numLP;
     performance(3, k) = sum(coreIndReduce);

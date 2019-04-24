@@ -1,9 +1,9 @@
-function [reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, reduction, varargin)
+function [reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, tol, reduction, varargin)
 % swifcore is an even faster version of fastcore
 %
 % USAGE:
 %
-%    [reconstruction, LP] = swiftcore(S, rev, coreInd, weights, reduction [, solver])
+%    [reconstruction, LP] = swiftcore(S, rev, coreInd, weights, tol, reduction [, solver])
 %
 % INPUTS:
 %    model:        the metabolic network with fields:
@@ -14,6 +14,7 @@ function [reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, red
 %                    * .mets - the cell array of metabolite abbreviations
 %    coreInd:      the set of indices corresponding to the core reactions
 %    weights:      weight vector for the penalties associated with each reaction
+%    tol:          zero-tolerance, i.e., the smallest flux value considered nonzero
 %    reduction:    boolean enabling the metabolic network reduction preprocess 
 % 
 % OPTIONAL INPUT:
@@ -42,6 +43,10 @@ function [reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, red
     rev = ones(n, 1);
     rev(model.lb == 0) = 0;
     rev(model.ub == 0) = -1;
+    model.ub(rev == -1) = -model.lb(rev == -1);
+    model.lb(rev == -1) = 0;
+    model.ub = model.ub/norm(model.ub, Inf);
+    model.lb = model.lb/norm(model.lb, Inf);
     reacNum = (1:n).';
     fullCouplings = (1:n).';
     
@@ -60,17 +65,26 @@ function [reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, red
                 nzcols = find(S(i, :));
                 % check to see if the i-th row of S has only two nonzero elements
                 if length(nzcols) == 2
-                    % deleting the reaction from the rev vector
-                    if rev(nzcols(2)) ~= 1
-                        if S(i, nzcols(1))/S(i, nzcols(2)) < 0
+                    c = S(i, nzcols(1))/S(i, nzcols(2));
+                    % deleting the reaction from the rev, lb, and ub vectors
+                    if c < 0
+                        if rev(nzcols(2)) ~= 1
                             rev(nzcols(1)) = rev(nzcols(2));
-                        else
+                        end
+                        model.lb(nzcols(1)) = max([model.lb(nzcols(1)), -model.lb(nzcols(2))/c]);
+                        model.ub(nzcols(1)) = min([model.ub(nzcols(1)), -model.ub(nzcols(2))/c]);
+                    else
+                        if rev(nzcols(2)) ~= 1
                             rev(nzcols(1)) = -1 - rev(nzcols(2));
                         end
+                        model.lb(nzcols(1)) = max([model.lb(nzcols(1)), -model.ub(nzcols(2))/c]);
+                        model.ub(nzcols(1)) = min([model.ub(nzcols(1)), -model.lb(nzcols(2))/c]);
                     end
                     rev(nzcols(2)) = [];
+                    model.lb(nzcols(2)) = [];
+                    model.ub(nzcols(2)) = [];
                     % merging the fully coupled pair of reactions
-                    S(:, nzcols(1)) = S(:, nzcols(1)) - S(i, nzcols(1))/S(i, nzcols(2))*S(:, nzcols(2));
+                    S(:, nzcols(1)) = S(:, nzcols(1)) - c*S(:, nzcols(2));
                     S(:, nzcols(2)) = [];
                     % deleting the zero rows from the stoichiometric matrix
                     S = S(any(S, 2), :);
@@ -88,14 +102,10 @@ function [reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, red
     rev(rev == -1) = 0;
     model.S = S;
     model.rev = rev;
-    model.lb = model.lb(reacNum);
-    model.ub = model.ub(reacNum);
     
     %% the main algorithm
     weights(ismember(reacNum, coreInd)) = 0;
     n_ = length(weights);
-    % the zero-tolerance parameter is the smallest flux value that is considered nonzero
-    tol = norm(S, 'fro')*eps(class(S));
     % phase one of unblocking the irreversible reactions
     blocked = zeros(n_, 1);
     LP = 1;
@@ -106,9 +116,9 @@ function [reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, red
         blocked(abs(flux) > tol) = false;
     else
         % identifying the blocked reversible reactions
-        [Q, R, ~] = qr(transpose(S(:, weights == 0)));
-        Z = Q(:, sum(abs(diag(R)) > tol)+1:end);
-        blocked(weights == 0) = vecnorm(Z, 2, 2) < tol;
+        [~, D, V] = svds(S(:, weights == 0), 10, 'smallest');
+        blocked(weights == 0) = vecnorm(V(:, diag(D) < ...
+            norm(S(:, weights == 0), 'fro')*eps(class(S))), Inf, 2) < tol;
     end
     % phase two of unblocking the reversible reactions
     while any(blocked)

@@ -6,7 +6,7 @@
    <!--
 This HTML was auto-generated from MATLAB code.
 To make changes, update the MATLAB code and republish this document.
-      --><title>weightedTest</title><meta name="generator" content="MATLAB 9.5"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2019-02-18"><meta name="DC.source" content="weightedTest.m"><style type="text/css">
+      --><title>weightedTest</title><meta name="generator" content="MATLAB 9.6"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2019-04-14"><meta name="DC.source" content="weightedTest.m"><style type="text/css">
 html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
 
 html { min-height:100%; margin-bottom:1px; }
@@ -88,9 +88,9 @@ errors = true(3, l);
     <span class="comment">% randomly sampling the set of core reactions</span>
     core = randsample(n, n/2);
     <span class="comment">% FASTCORE</span>
-    tic;
+    time1 = tic;
     coreRxn = fastCoreWeighted(core, model, weights(k)*ones(n, 1), 1e-4);
-    runtime(1, k) = toc;
+    runtime(1, k) = toc(time1);
     coreRxnBool = false(n, 1);
     coreRxnBool(coreRxn) = true;
     performance(1, k) = sum(coreRxnBool);
@@ -103,15 +103,15 @@ errors = true(3, l);
         tempmodel.rxns = model.rxns(coreRxnBool);
         tempmodel.c = model.c(coreRxnBool);
         tempmodel.mets = model.mets;
-        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        A = fastcc(tempmodel, 1e-4);
         <span class="keyword">if</span> all(A.' == 1:length(A))
             errors(1, k) = false;
         <span class="keyword">end</span>
     <span class="keyword">end</span>
     <span class="comment">% SWIFTCORE w/o reduction</span>
-    tic;
-    [coreInd, numLP] = swiftcore(model.S, model.rev, core, weights(k)*ones(n, 1), false, solver);
-    runtime(2, k) = toc;
+    time2 = tic;
+    [~, coreInd, numLP] = swiftcore(model, core, weights(k)*ones(n, 1), 1e-10, false, solver);
+    runtime(2, k) = toc(time2);
     LP(1, k) = numLP;
     performance(2, k) = sum(coreInd);
     <span class="comment">% consistency checking</span>
@@ -123,15 +123,15 @@ errors = true(3, l);
         tempmodel.rxns = model.rxns(coreInd);
         tempmodel.c = model.c(coreInd);
         tempmodel.mets = model.mets;
-        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        A = fastcc(tempmodel, 1e-4);
         <span class="keyword">if</span> all(A.' == 1:length(A))
             errors(2, k) = false;
         <span class="keyword">end</span>
     <span class="keyword">end</span>
     <span class="comment">% SWIFTCORE w/ reduction</span>
-    tic;
-    [coreIndReduce, numLP] = swiftcore(model.S, model.rev, core, weights(k)*ones(n, 1), true, solver);
-    runtime(3, k) = toc;
+    time3 = tic;
+    [~, coreIndReduce, numLP] = swiftcore(model, core, weights(k)*ones(n, 1), 1e-10, true, solver);
+    runtime(3, k) = toc(time3);
     LP(2, k) = numLP;
     performance(3, k) = sum(coreIndReduce);
     <span class="comment">% consistency checking</span>
@@ -143,7 +143,7 @@ errors = true(3, l);
         tempmodel.rxns = model.rxns(coreIndReduce);
         tempmodel.c = model.c(coreIndReduce);
         tempmodel.mets = model.mets;
-        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        A = fastcc(tempmodel, 1e-4);
         <span class="keyword">if</span> all(A.' == 1:length(A))
             errors(3, k) = false;
         <span class="keyword">end</span>
@@ -170,7 +170,8 @@ figure();
 boxplot(LP.',<span class="string">'Notch'</span>,<span class="string">'on'</span>,<span class="string">'Labels'</span>,{<span class="string">'SWIFTCORE w/o reduction'</span>,<span class="string">'SWIFTCORE w/ reduction'</span>});
 ylabel(<span class="string">'number of solved LPs'</span>);
 savefig(<span class="string">'LPBox'</span>);
-</pre><pre class="codeoutput">Warning: File: C:\Program
+</pre><pre class="codeoutput"> &gt; Submodules exist but cannot be updated (remote cannot be reached).
+Warning: File: C:\Program
 Files\IBM\ILOG\CPLEX_Studio128\cplex\matlab\x64_win64\@Cplex\Cplex.p Line: 965
 Column: 0
 Defining "changedParam" in the nested function shares it with the parent
@@ -178,1116 +179,62 @@ function.  In a future release, to share "changedParam" between parent and
 nested functions, explicitly define it in the parent function. 
 
  &gt; IBM ILOG CPLEX interface added to MATLAB path.
- &gt; The solver compatibility is not tested with MATLAB R2018b.
+ &gt; The solver compatibility is not tested with MATLAB R2019a.
      1
 
-|J|=2671  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=6019
+|J|=2635  |A|=6026
 |J|=975  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7772
-|J|=112  
+|A|=7781
+|J|=113  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7783
-|J|=106  
+|A|=7796
+|J|=105  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7790
-|J|=102  |A|=7794
-|J|=100  |A|=7794
-(flip)  |A|=7954
-|J|=29  
+|A|=7803
+|J|=101  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7955
-|J|=28  |A|=7955
-(flip)  |A|=7955
-|A|=7958
-|J|=26  
+|A|=7808
+|J|=99  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7961
-|J|=24  |A|=7966
-|J|=22  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7970
-|J|=20  |A|=7970
+|A|=7811
+|J|=97  |A|=7811
+(flip)  |A|=7966
+|J|=30  |A|=7966
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7977
-|J|=16  |A|=7977
+|A|=7969
+|J|=28  |A|=7969
+(flip)  |A|=7969
+
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7973
+|J|=26  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7976
+|J|=24  |A|=7976
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
 |A|=7981
-|J|=14  |A|=7981
-(flip)  |A|=7985
-|J|=12  |A|=7992
-|J|=10  |A|=7992
-(flip)  |A|=7995
-|J|=8  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7999
-|J|=6  |A|=8003
-|J|=4  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=8007
-|J|=2  |A|=8007
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=8010
-|J|=0  |A|=8010
-Elapsed time is 15.530340 seconds.
-     2
-
-|J|=2698  |A|=6110
-|J|=912  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7750
-|J|=99  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7754
-|J|=97  |A|=7754
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7881
-|J|=41  |A|=7889
-|J|=37  |A|=7889
-(flip)  |A|=7889
-|A|=7892
-|J|=35  |A|=7892
-(flip)  |A|=7900
-|J|=31  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7904
-|J|=29  |A|=7907
-|J|=27  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7916
-|J|=23  |A|=7920
-|J|=21  |A|=7920
-(flip)  |A|=7924
-|J|=19  |A|=7924
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7928
-|J|=17  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7931
-|J|=15  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7934
-|J|=13  |A|=7934
-(flip)  |A|=7937
-|J|=11  |A|=7937
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7939
-|J|=10  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7943
-|J|=8  |A|=7948
-|J|=6  |A|=7952
-|J|=4  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7958
-|J|=2  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7963
-|J|=0  |A|=7963
-Elapsed time is 16.742528 seconds.
-     3
-
-|J|=2640  |A|=5984
-|J|=951  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7750
-|J|=94  |A|=7753
-|J|=93  |A|=7757
-|J|=91  |A|=7757
-(flip)  |A|=7899
-|J|=35  |A|=7907
-|J|=31  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7909
-|J|=29  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7911
-|J|=27  |A|=7911
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7914
-|J|=26  |A|=7914
-(flip)  |A|=7914
-
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7919
-|J|=24  |A|=7922
-|J|=22  |A|=7927
-|J|=20  |A|=7932
-|J|=18  |A|=7936
-|J|=16  |A|=7936
-(flip)  |A|=7939
-|J|=14  |A|=7939
-(flip)  |A|=7944
-|J|=12  |A|=7949
-|J|=8  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7953
-|J|=6  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7956
-|J|=4  |A|=7956
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7960
-|J|=2  |A|=7960
-(flip)  |A|=7964
-|J|=0  |A|=7964
-Elapsed time is 15.580455 seconds.
-     4
-
-|J|=2633  |A|=5928
-|J|=1039  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7738
-|J|=109  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7747
-|J|=104  |A|=7747
-(flip)  |A|=7897
-|J|=43  |A|=7900
-|J|=41  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7904
-|J|=39  |A|=7904
-(flip)  |A|=7904
-|A|=7904
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7908
-|J|=37  |A|=7908
-(flip)  |A|=7913
-|J|=35  |A|=7913
-(flip)  |A|=7917
-|J|=33  |A|=7917
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7921
-|J|=31  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7925
-|J|=29  |A|=7929
-|J|=27  |A|=7929
-(flip)  |A|=7932
-|J|=25  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7935
-|J|=23  |A|=7938
-|J|=21  |A|=7941
-|J|=19  |A|=7944
-|J|=17  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7948
-|J|=15  |A|=7952
-|J|=13  |A|=7952
-(flip)  |A|=7955
-|J|=11  |A|=7955
-(flip)  |A|=7957
-|J|=10  |A|=7961
-|J|=8  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7966
-|J|=6  |A|=7970
-|J|=4  |A|=7974
-|J|=2  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7978
-|J|=0  |A|=7978
-Elapsed time is 17.217881 seconds.
-     5
-
-|J|=2696  |A|=6087
-|J|=958  |A|=7805
-|J|=108  |A|=7811
-|J|=104  |A|=7821
-|J|=98  |A|=7826
-|J|=96  |A|=7826
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7978
-|J|=32  |A|=7978
-(flip)  |A|=7978
-|A|=7978
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7983
-|J|=30  |A|=7983
-(flip)  |A|=7987
-|J|=28  |A|=7991
-|J|=26  |A|=7994
-|J|=24  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7998
 |J|=22  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=8002
-|J|=20  |A|=8006
-|J|=18  |A|=8010
-|J|=16  |A|=8010
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=8015
-|J|=14  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=8018
-|J|=12  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=8022
-|J|=10  |A|=8026
-|J|=8  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=8030
-|J|=6  |A|=8034
-|J|=4  |A|=8038
-|J|=2  |A|=8038
-(flip)  |A|=8041
-|J|=0  |A|=8041
-Elapsed time is 14.833334 seconds.
-     6
-
-|J|=2635  |A|=5984
-|J|=984  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7740
-|J|=99  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7742
-|J|=98  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7745
-|J|=96  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7749
-|J|=94  |A|=7749
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7915
-|J|=27  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7917
-|J|=25  |A|=7917
-(flip)  |A|=7923
-|J|=22  |A|=7923
-(flip)  |A|=7923
-|A|=7926
-|J|=20  |A|=7926
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7930
-|J|=18  |A|=7930
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7935
-|J|=16  |A|=7935
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7940
-|J|=14  |A|=7940
-(flip)  |A|=7945
-|J|=12  |A|=7945
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7948
-|J|=10  |A|=7952
-|J|=8  |A|=7952
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7956
-|J|=6  |A|=7956
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7960
-|J|=4  |A|=7962
-|J|=2  |A|=7962
-(flip)  |A|=7966
-|J|=0  |A|=7966
-Elapsed time is 13.505687 seconds.
-     7
-
-|J|=2696  |A|=5953
-|J|=966  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7728
-|J|=102  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7747
-|J|=94  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7755
-|J|=88  |A|=7755
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7908
-|J|=28  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7914
-|J|=24  |A|=7914
-(flip)  |A|=7914
-|A|=7914
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7920
-|J|=20  |A|=7923
-|J|=18  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7927
-|J|=16  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7930
-|J|=14  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7934
-|J|=12  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7940
-|J|=10  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7947
-|J|=8  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7951
-|J|=6  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7954
-|J|=4  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7958
-|J|=2  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7962
-|J|=0  |A|=7962
-Elapsed time is 11.695022 seconds.
-     8
-
-|J|=2739  |A|=6111
-|J|=897  |A|=7802
-|J|=90  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7806
-|J|=88  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7817
-|J|=82  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7826
-|J|=76  |A|=7826
-(flip)  |A|=7947
-|J|=26  |A|=7947
-(flip)  |A|=7950
-|J|=24  |A|=7950
-(flip)  |A|=7950
-
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7957
-|J|=22  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7961
-|J|=20  |A|=7961
-(flip)  |A|=7965
-|J|=18  |A|=7970
-|J|=16  |A|=7970
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7973
-|J|=14  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7978
-|J|=12  |A|=7978
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7982
-|J|=10  |A|=7988
-|J|=8  |A|=7988
-(flip)  |A|=7995
-|J|=6  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7999
-|J|=4  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=8002
-|J|=2  |A|=8002
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=8006
-|J|=0  |A|=8006
-Elapsed time is 13.004142 seconds.
-     9
-
-|J|=2673  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=6043
-|J|=940  |A|=7760
-|J|=82  |A|=7780
-|J|=73  |A|=7787
-|J|=69  |A|=7787
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7921
-|J|=24  |A|=7921
-(flip)  |A|=7921
-
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7925
-|J|=22  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7928
-|J|=20  |A|=7928
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7935
-|J|=16  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7939
-|J|=14  |A|=7943
-|J|=12  |A|=7943
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7946
-|J|=10  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7953
-|J|=8  |A|=7953
-(flip)  |A|=7959
-|J|=6  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7963
-|J|=4  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7967
-|J|=2  |A|=7971
-|J|=0  |A|=7971
-Elapsed time is 11.054301 seconds.
-    10
-
-|J|=2668  |A|=6139
-|J|=881  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7764
-|J|=84  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7773
-|J|=81  |A|=7777
-|J|=79  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7785
-|J|=75  |A|=7785
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7885
-|J|=36  |A|=7885
-(flip)  |A|=7897
-|J|=30  |A|=7897
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7901
-|J|=28  |A|=7901
-(flip)  |A|=7901
-
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7906
-|J|=26  |A|=7910
-|J|=24  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7915
-|J|=22  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7919
-|J|=20  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7923
-|J|=18  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7927
-|J|=16  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7931
-|J|=14  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7937
-|J|=12  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7940
-|J|=10  |A|=7940
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7945
-|J|=8  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7948
-|J|=6  |A|=7952
-|J|=4  |A|=7955
-|J|=2  |A|=7959
-|J|=0  |A|=7959
-Elapsed time is 13.491983 seconds.
-    11
-
-|J|=2706  |A|=6098
-|J|=971  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7783
-|J|=110  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7785
-|J|=109  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7788
-|J|=107  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7791
-|J|=105  |A|=7791
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7934
-|J|=47  |A|=7934
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7948
-|J|=42  |A|=7948
-(flip)  |A|=7956
-|J|=36  |A|=7956
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7960
-|J|=34  |A|=7960
-(flip)  |A|=7960
-
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7964
-|J|=32  |A|=7969
-|J|=30  |A|=7969
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7972
-|J|=28  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7976
-|J|=26  |A|=7976
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7980
-|J|=24  |A|=7980
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7984
-|J|=22  |A|=7984
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7989
-|J|=20  |A|=7989
-(flip)  |A|=7993
-|J|=18  |A|=7993
-(flip)  |A|=7996
-|J|=16  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=8000
-|J|=14  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=8003
-|J|=12  |A|=8003
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=8008
-|J|=10  |A|=8011
-|J|=8  |A|=8014
-|J|=6  |A|=8014
-(flip)  |A|=8018
-|J|=4  |A|=8018
-(flip)  |A|=8022
-|J|=2  |A|=8022
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=8026
-|J|=0  |A|=8026
-Elapsed time is 17.590381 seconds.
-    12
-
-|J|=2705  |A|=5997
-|J|=963  |A|=7784
-|J|=83  |A|=7790
-|J|=80  |A|=7793
-|J|=78  |A|=7793
-(flip)  
-0 = sol.stat
-3 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7793
-
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7825
-|J|=63  |A|=7834
-|J|=59  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7836
-|J|=58  |A|=7836
-(flip)  |A|=7846
-|J|=53  |A|=7851
-|J|=50  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7853
-|J|=49  |A|=7853
-(flip)  |A|=7856
-|J|=47  |A|=7856
-(flip)  |A|=7859
-|J|=45  |A|=7859
-(flip)  |A|=7864
-|J|=43  |A|=7864
-(flip)  |A|=7869
-|J|=41  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7872
-|J|=40  |A|=7875
-|J|=39  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7879
-|J|=38  |A|=7883
-|J|=37  |A|=7883
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7889
-|J|=35  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7895
-|J|=33  |A|=7897
-|J|=32  |A|=7900
-|J|=31  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7903
-|J|=30  |A|=7909
-|J|=28  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7912
-|J|=27  |A|=7916
-|J|=26  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7919
-|J|=25  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7922
-|J|=23  |A|=7922
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7925
-|J|=22  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7927
-|J|=21  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7930
-|J|=20  |A|=7932
-|J|=19  |A|=7934
-|J|=18  |A|=7934
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7938
-|J|=16  |A|=7940
-|J|=15  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7942
-|J|=14  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7944
-|J|=13  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7946
-|J|=12  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7950
-|J|=11  |A|=7950
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7954
-|J|=9  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7961
-|J|=7  |A|=7964
-|J|=6  |A|=7968
-|J|=5  |A|=7970
-|J|=4  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7972
-|J|=3  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7974
-|J|=2  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7976
-|J|=1  |A|=7980
-|J|=0  |A|=7980
-Elapsed time is 29.107280 seconds.
-    13
-
-|J|=2712  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=6178
-|J|=914  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7799
-|J|=107  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7806
-|J|=103  |A|=7806
-(flip)  |A|=7948
-|J|=41  |A|=7948
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7950
-|J|=40  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7955
-|J|=36  |A|=7955
-(flip)  |A|=7955
-
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7960
-|J|=34  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7963
-|J|=32  |A|=7963
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7968
-|J|=28  |A|=7968
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7975
-|J|=26  |A|=7975
-(flip)  |A|=7979
-|J|=24  |A|=7979
-(flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
@@ -1307,381 +254,2205 @@ Warning: LP solution may not be optimal
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7998
-|J|=14  
+|A|=7999
+|J|=12  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
 |A|=8002
-|J|=12  |A|=8002
+|J|=10  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8005
+|J|=8  |A|=8005
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=8007
-|J|=10  |A|=8007
+|A|=8009
+|J|=6  |A|=8009
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=8011
-|J|=8  
+|A|=8013
+|J|=4  |A|=8013
+(flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=8014
-|J|=6  |A|=8014
-(flip)  |A|=8018
-|J|=4  |A|=8018
-(flip)  |A|=8022
-|J|=2  
+|A|=8017
+|J|=2  |A|=8017
+(flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=8025
-|J|=0  |A|=8025
-Elapsed time is 15.704594 seconds.
-    14
+|A|=8021
+|J|=0  |A|=8021
+Elapsed time is 14.570922 seconds.
+  8021	Total reactions
+  4203	Reversible reactions.
+  3818	Irreversible reactions.
+  7768	Flux consistent reactions, without flipping.
+   253	Flux inconsistent reactions, without flipping.
+  8008	Flux consistent reactions.
+    13	Flux inconsistent reversible reactions left to flip.
+  8009	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  8011	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  8013	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  8015	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  8017	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  8019	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  8021	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7994	Total reactions
+  4172	Reversible reactions.
+  3822	Irreversible reactions.
+  7776	Flux consistent reactions, without flipping.
+   218	Flux inconsistent reactions, without flipping.
+  7990	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7992	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7994	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7919	Total reactions
+  4109	Reversible reactions.
+  3810	Irreversible reactions.
+  7737	Flux consistent reactions, without flipping.
+   182	Flux inconsistent reactions, without flipping.
+  7911	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7913	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7917	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7919	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+     2
 
-|J|=2715  |A|=5973
-|J|=960  
+|J|=2675  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7694
-|J|=108  |A|=7708
-|J|=98  |A|=7708
-(flip)  
+|A|=6114
+|J|=945  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7869
-|J|=28  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7878
-|J|=24  |A|=7878
-(flip)  |A|=7878
-|A|=7878
-(flip)  |A|=7881
-|J|=22  |A|=7881
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7885
-|J|=20  |A|=7885
-(flip)  |A|=7893
-|J|=16  |A|=7893
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7898
-|J|=14  |A|=7898
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7903
-|J|=12  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7909
-|J|=10  |A|=7913
-|J|=8  |A|=7913
-(flip)  |A|=7919
-|J|=6  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7926
-|J|=4  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7930
-|J|=2  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7932
-|J|=0  |A|=7932
-Elapsed time is 10.773698 seconds.
-    15
-
-|J|=2625  |A|=5903
-|J|=1012  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7672
-|J|=114  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7675
-|J|=112  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7683
-|J|=108  |A|=7683
-(flip)  
+|A|=7814
+|J|=106  
 0 = sol.stat
 3 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7683
-|A|=7724
-|J|=94  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7739
-|J|=88  |A|=7742
-|J|=86  |A|=7756
-|J|=77  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7760
-|J|=76  |A|=7767
-|J|=74  |A|=7767
+|A|=7814
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7770
-|J|=72  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7774
-|J|=70  |A|=7777
-|J|=69  |A|=7782
-|J|=68  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7787
-|J|=65  |A|=7793
-|J|=63  |A|=7796
-|J|=62  |A|=7799
-|J|=61  |A|=7799
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7806
-|J|=58  |A|=7811
-|J|=56  |A|=7813
-|J|=55  |A|=7813
-(flip)  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7816
-|J|=53  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7820
-|J|=52  |A|=7825
-|J|=49  |A|=7825
-(flip)  |A|=7829
-|J|=47  |A|=7831
-|J|=46  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7833
-|J|=45  |A|=7836
-|J|=44  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7838
-|J|=43  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7841
-|J|=42  |A|=7844
-|J|=40  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7847
-|J|=38  |A|=7847
-(flip)  |A|=7854
-|J|=36  |A|=7856
-|J|=35  |A|=7858
-|J|=34  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7860
+|A|=7996
 |J|=33  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7863
-|J|=32  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7866
-|J|=30  |A|=7871
+|A|=8002
 |J|=29  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7873
-|J|=28  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7876
-|J|=27  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7882
-|J|=25  |A|=7882
+|A|=8006
+|J|=27  |A|=8010
+|J|=25  |A|=8010
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7887
-|J|=23  |A|=7887
-(flip)  |A|=7891
-|J|=21  |A|=7893
-|J|=20  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7896
-|J|=18  |A|=7898
-|J|=17  |A|=7899
-|J|=16  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7901
-|J|=15  |A|=7901
+|A|=8014
+|J|=24  |A|=8014
+(flip)  |A|=8014
+|A|=8014
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7905
-|J|=12  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7907
-|J|=11  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7911
-|J|=10  |A|=7911
+|A|=8021
+|J|=20  |A|=8021
+(flip)  |A|=8024
+|J|=18  |A|=8027
+|J|=16  |A|=8027
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7915
+|A|=8032
+|J|=14  |A|=8032
+(flip)  |A|=8036
+|J|=12  |A|=8036
+(flip)  |A|=8040
+|J|=10  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8044
 |J|=8  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7917
-|J|=7  |A|=7919
-|J|=6  |A|=7921
-|J|=5  |A|=7923
-|J|=4  |A|=7923
-(flip)  |A|=7927
-|J|=2  |A|=7931
-|J|=1  
+|A|=8047
+|J|=6  |A|=8047
+(flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7935
-|J|=0  |A|=7935
-Elapsed time is 33.821791 seconds.
-    16
+|A|=8051
+|J|=4  |A|=8051
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8055
+|J|=2  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8058
+|J|=0  |A|=8058
+Elapsed time is 12.924980 seconds.
+  8058	Total reactions
+  4217	Reversible reactions.
+  3841	Irreversible reactions.
+  7816	Flux consistent reactions, without flipping.
+   242	Flux inconsistent reactions, without flipping.
+  8048	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  8050	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  8052	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  8054	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  8056	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  8058	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  8050	Total reactions
+  4200	Reversible reactions.
+  3850	Irreversible reactions.
+  7794	Flux consistent reactions, without flipping.
+   256	Flux inconsistent reactions, without flipping.
+  8036	Flux consistent reactions.
+    14	Flux inconsistent reversible reactions left to flip.
+  8040	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  8042	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  8044	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  8046	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  8048	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  8050	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7981	Total reactions
+  4143	Reversible reactions.
+  3838	Irreversible reactions.
+  7801	Flux consistent reactions, without flipping.
+   180	Flux inconsistent reactions, without flipping.
+  7974	Flux consistent reactions.
+     7	Flux inconsistent reversible reactions left to flip.
+  7975	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7977	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7979	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7981	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+     3
 
-|J|=2719  |A|=6189
-|J|=900  
-3 = sol.stat
-5 = sol.origStat
-Warning: LP solution may not be optimal 
-|A|=7802
+|J|=2629  |A|=6057
+|J|=941  |A|=7771
 |J|=90  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7809
-|J|=85  |A|=7815
-|J|=81  |A|=7815
+|A|=7775
+|J|=88  |A|=7778
+|J|=86  |A|=7778
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7891
+|J|=39  |A|=7891
+(flip)  |A|=7897
+|J|=36  |A|=7897
+(flip)  |A|=7897
+|A|=7897
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7900
+|J|=34  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7905
+|J|=32  |A|=7905
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7909
+|J|=30  |A|=7909
+(flip)  |A|=7912
+|J|=28  |A|=7917
+|J|=26  |A|=7917
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7923
+|J|=24  |A|=7923
+(flip)  |A|=7927
+|J|=22  |A|=7927
+(flip)  |A|=7931
+|J|=20  |A|=7936
+|J|=18  |A|=7941
+|J|=16  |A|=7944
+|J|=14  |A|=7944
+(flip)  |A|=7948
+|J|=12  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7951
+|J|=10  |A|=7951
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7955
+|J|=8  |A|=7955
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7959
+|J|=6  |A|=7959
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
 |A|=7963
-|J|=21  |A|=7963
+|J|=4  |A|=7963
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7965
-|J|=20  |A|=7965
-(flip)  |A|=7965
-|A|=7965
+|A|=7967
+|J|=2  |A|=7967
+(flip)  |A|=7971
+|J|=0  |A|=7971
+Elapsed time is 16.246445 seconds.
+  7971	Total reactions
+  4168	Reversible reactions.
+  3803	Irreversible reactions.
+  7721	Flux consistent reactions, without flipping.
+   250	Flux inconsistent reactions, without flipping.
+  7955	Flux consistent reactions.
+    16	Flux inconsistent reversible reactions left to flip.
+  7957	Flux consistent reactions.
+    14	Flux inconsistent reversible reactions left to flip.
+  7959	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7961	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7963	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7965	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7967	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7969	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7971	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7949	Total reactions
+  4145	Reversible reactions.
+  3804	Irreversible reactions.
+  7724	Flux consistent reactions, without flipping.
+   225	Flux inconsistent reactions, without flipping.
+  7924	Flux consistent reactions.
+    25	Flux inconsistent reversible reactions left to flip.
+  7939	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7941	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7943	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7945	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7947	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7949	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7878	Total reactions
+  4120	Reversible reactions.
+  3758	Irreversible reactions.
+  7686	Flux consistent reactions, without flipping.
+   192	Flux inconsistent reactions, without flipping.
+  7861	Flux consistent reactions.
+    17	Flux inconsistent reversible reactions left to flip.
+  7864	Flux consistent reactions.
+    14	Flux inconsistent reversible reactions left to flip.
+  7866	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7870	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7874	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7876	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7878	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+     4
+
+|J|=2660  |A|=6005
+|J|=988  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7748
+|J|=99  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7764
+|J|=89  |A|=7764
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7969
-|J|=18  |A|=7969
-(flip)  |A|=7974
-|J|=16  
+|A|=7918
+|J|=31  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7977
-|J|=14  |A|=7977
+|A|=7925
+|J|=29  |A|=7925
+(flip)  |A|=7925
+|A|=7925
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7981
-|J|=12  
+|A|=7930
+|J|=27  |A|=7935
+|J|=23  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7938
+|J|=21  |A|=7938
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7945
+|J|=19  |A|=7945
+(flip)  |A|=7950
+|J|=17  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7953
+|J|=15  |A|=7953
+(flip)  |A|=7956
+|J|=13  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7959
+|J|=11  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7962
+|J|=9  |A|=7962
+(flip)  |A|=7966
+|J|=7  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7970
+|J|=5  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7975
+|J|=3  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7979
+|J|=2  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
 |A|=7984
-|J|=10  |A|=7984
+|J|=0  |A|=7984
+Elapsed time is 12.318864 seconds.
+  7984	Total reactions
+  4148	Reversible reactions.
+  3836	Irreversible reactions.
+  7770	Flux consistent reactions, without flipping.
+   214	Flux inconsistent reactions, without flipping.
+  7974	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7976	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7978	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7980	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7982	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7984	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7966	Total reactions
+  4120	Reversible reactions.
+  3846	Irreversible reactions.
+  7738	Flux consistent reactions, without flipping.
+   228	Flux inconsistent reactions, without flipping.
+  7940	Flux consistent reactions.
+    26	Flux inconsistent reversible reactions left to flip.
+  7946	Flux consistent reactions.
+    20	Flux inconsistent reversible reactions left to flip.
+  7950	Flux consistent reactions.
+    16	Flux inconsistent reversible reactions left to flip.
+  7952	Flux consistent reactions.
+    14	Flux inconsistent reversible reactions left to flip.
+  7954	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7956	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7958	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7960	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7962	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7964	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7966	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7912	Total reactions
+  4102	Reversible reactions.
+  3810	Irreversible reactions.
+  7725	Flux consistent reactions, without flipping.
+   187	Flux inconsistent reactions, without flipping.
+  7894	Flux consistent reactions.
+    18	Flux inconsistent reversible reactions left to flip.
+  7896	Flux consistent reactions.
+    16	Flux inconsistent reversible reactions left to flip.
+  7898	Flux consistent reactions.
+    14	Flux inconsistent reversible reactions left to flip.
+  7902	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7904	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7906	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7908	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7910	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7912	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+     5
+
+|J|=2647  |A|=6009
+|J|=984  |A|=7767
+|J|=95  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7774
+|J|=91  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7783
+|J|=87  |A|=7783
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7939
+|J|=30  |A|=7942
+|J|=28  |A|=7942
+(flip)  |A|=7942
+|A|=7942
+(flip)  |A|=7946
+|J|=26  |A|=7949
+|J|=24  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7952
+|J|=22  |A|=7952
+(flip)  |A|=7957
+|J|=20  |A|=7962
+|J|=18  |A|=7967
+|J|=16  |A|=7967
+(flip)  |A|=7972
+|J|=14  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7975
+|J|=13  |A|=7977
+|J|=11  |A|=7981
+|J|=9  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7985
+|J|=7  |A|=7985
 (flip)  |A|=7988
-|J|=8  |A|=7988
+|J|=5  |A|=7988
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=7992
-|J|=6  |A|=7995
-|J|=4  |A|=7995
-(flip)  |A|=7999
-|J|=2  |A|=7999
+|A|=7990
+|J|=4  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7994
+|J|=2  |A|=7994
 (flip)  
 3 = sol.stat
 5 = sol.origStat
 Warning: LP solution may not be optimal 
-|A|=8003
-|J|=0  |A|=8003
-Elapsed time is 12.237235 seconds.
-</pre><img vspace="5" hspace="5" src="weightedTest_01.png" alt=""> <img vspace="5" hspace="5" src="weightedTest_02.png" alt=""> <img vspace="5" hspace="5" src="weightedTest_03.png" alt=""> <p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2018b</a><br></p></div><!--
+|A|=7997
+|J|=0  |A|=7997
+Elapsed time is 13.311495 seconds.
+  7997	Total reactions
+  4171	Reversible reactions.
+  3826	Irreversible reactions.
+  7767	Flux consistent reactions, without flipping.
+   230	Flux inconsistent reactions, without flipping.
+  7985	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7987	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7989	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7993	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7995	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7997	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7989	Total reactions
+  4160	Reversible reactions.
+  3829	Irreversible reactions.
+  7766	Flux consistent reactions, without flipping.
+   223	Flux inconsistent reactions, without flipping.
+  7968	Flux consistent reactions.
+    21	Flux inconsistent reversible reactions left to flip.
+  7973	Flux consistent reactions.
+    16	Flux inconsistent reversible reactions left to flip.
+  7977	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7979	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7983	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7985	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7987	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7989	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7900	Total reactions
+  4109	Reversible reactions.
+  3791	Irreversible reactions.
+  7713	Flux consistent reactions, without flipping.
+   187	Flux inconsistent reactions, without flipping.
+  7881	Flux consistent reactions.
+    19	Flux inconsistent reversible reactions left to flip.
+  7885	Flux consistent reactions.
+    15	Flux inconsistent reversible reactions left to flip.
+  7887	Flux consistent reactions.
+    13	Flux inconsistent reversible reactions left to flip.
+  7889	Flux consistent reactions.
+    11	Flux inconsistent reversible reactions left to flip.
+  7890	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7892	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7894	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7896	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7898	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7900	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+     6
+
+|J|=2683  |A|=6031
+|J|=970  |A|=7746
+|J|=103  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7761
+|J|=94  |A|=7761
+(flip)  |A|=7912
+|J|=32  |A|=7912
+(flip)  |A|=7916
+|J|=30  |A|=7916
+(flip)  |A|=7919
+|J|=28  |A|=7919
+(flip)  |A|=7919
+|A|=7923
+|J|=26  |A|=7928
+|J|=24  |A|=7928
+(flip)  |A|=7933
+|J|=22  |A|=7933
+(flip)  |A|=7937
+|J|=20  |A|=7942
+|J|=18  |A|=7948
+|J|=16  |A|=7951
+|J|=14  |A|=7955
+|J|=12  |A|=7955
+(flip)  |A|=7959
+|J|=10  |A|=7959
+(flip)  |A|=7963
+|J|=8  |A|=7963
+(flip)  |A|=7966
+|J|=6  |A|=7970
+|J|=4  |A|=7974
+|J|=2  |A|=7978
+|J|=0  |A|=7978
+Elapsed time is 12.796499 seconds.
+  7978	Total reactions
+  4149	Reversible reactions.
+  3829	Irreversible reactions.
+  7735	Flux consistent reactions, without flipping.
+   243	Flux inconsistent reactions, without flipping.
+  7952	Flux consistent reactions.
+    26	Flux inconsistent reversible reactions left to flip.
+  7954	Flux consistent reactions.
+    24	Flux inconsistent reversible reactions left to flip.
+  7970	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7972	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7974	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7976	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7978	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7982	Total reactions
+  4141	Reversible reactions.
+  3841	Irreversible reactions.
+  7770	Flux consistent reactions, without flipping.
+   212	Flux inconsistent reactions, without flipping.
+  7964	Flux consistent reactions.
+    18	Flux inconsistent reversible reactions left to flip.
+  7966	Flux consistent reactions.
+    16	Flux inconsistent reversible reactions left to flip.
+  7968	Flux consistent reactions.
+    14	Flux inconsistent reversible reactions left to flip.
+  7970	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7975	Flux consistent reactions.
+     7	Flux inconsistent reversible reactions left to flip.
+  7976	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7978	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7980	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7982	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7898	Total reactions
+  4098	Reversible reactions.
+  3800	Irreversible reactions.
+  7706	Flux consistent reactions, without flipping.
+   192	Flux inconsistent reactions, without flipping.
+  7891	Flux consistent reactions.
+     7	Flux inconsistent reversible reactions left to flip.
+  7893	Flux consistent reactions.
+     5	Flux inconsistent reversible reactions left to flip.
+  7896	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7898	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+     7
+
+|J|=2700  |A|=6107
+|J|=920  |A|=7766
+|J|=92  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7778
+|J|=83  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7786
+|J|=79  |A|=7786
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7917
+|J|=28  |A|=7917
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7920
+|J|=26  |A|=7920
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7925
+|J|=22  |A|=7925
+(flip)  |A|=7925
+|A|=7925
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7928
+|J|=20  |A|=7931
+|J|=18  |A|=7936
+|J|=16  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7939
+|J|=14  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7942
+|J|=12  |A|=7942
+(flip)  |A|=7947
+|J|=10  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7951
+|J|=8  |A|=7951
+(flip)  |A|=7954
+|J|=6  |A|=7959
+|J|=4  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7961
+|J|=2  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7965
+|J|=0  |A|=7965
+Elapsed time is 10.378078 seconds.
+  7965	Total reactions
+  4135	Reversible reactions.
+  3830	Irreversible reactions.
+  7712	Flux consistent reactions, without flipping.
+   253	Flux inconsistent reactions, without flipping.
+  7951	Flux consistent reactions.
+    14	Flux inconsistent reversible reactions left to flip.
+  7953	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7957	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7959	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7961	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7963	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7965	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7951	Total reactions
+  4090	Reversible reactions.
+  3861	Irreversible reactions.
+  7714	Flux consistent reactions, without flipping.
+   237	Flux inconsistent reactions, without flipping.
+  7947	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7949	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7951	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7878	Total reactions
+  4066	Reversible reactions.
+  3812	Irreversible reactions.
+  7676	Flux consistent reactions, without flipping.
+   202	Flux inconsistent reactions, without flipping.
+  7872	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7876	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7878	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+     8
+
+|J|=2687  |A|=6096
+|J|=919  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7771
+|J|=75  |A|=7771
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7911
+|J|=20  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7914
+|J|=18  |A|=7917
+|J|=16  |A|=7917
+(flip)  |A|=7917
+|A|=7917
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7921
+|J|=14  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7925
+|J|=12  |A|=7925
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7929
+|J|=10  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7934
+|J|=8  |A|=7934
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7939
+|J|=6  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7943
+|J|=4  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7947
+|J|=2  |A|=7952
+|J|=0  |A|=7952
+Elapsed time is 8.010856 seconds.
+  7952	Total reactions
+  4137	Reversible reactions.
+  3815	Irreversible reactions.
+  7729	Flux consistent reactions, without flipping.
+   223	Flux inconsistent reactions, without flipping.
+  7938	Flux consistent reactions.
+    14	Flux inconsistent reversible reactions left to flip.
+  7942	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7944	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7946	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7948	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7950	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7952	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7945	Total reactions
+  4122	Reversible reactions.
+  3823	Irreversible reactions.
+  7716	Flux consistent reactions, without flipping.
+   229	Flux inconsistent reactions, without flipping.
+  7918	Flux consistent reactions.
+    27	Flux inconsistent reversible reactions left to flip.
+  7924	Flux consistent reactions.
+    21	Flux inconsistent reversible reactions left to flip.
+  7935	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7939	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7941	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7943	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7945	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7877	Total reactions
+  4096	Reversible reactions.
+  3781	Irreversible reactions.
+  7677	Flux consistent reactions, without flipping.
+   200	Flux inconsistent reactions, without flipping.
+  7858	Flux consistent reactions.
+    19	Flux inconsistent reversible reactions left to flip.
+  7861	Flux consistent reactions.
+    16	Flux inconsistent reversible reactions left to flip.
+  7863	Flux consistent reactions.
+    14	Flux inconsistent reversible reactions left to flip.
+  7869	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7871	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7873	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7875	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7877	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+     9
+
+|J|=2698  |A|=6033
+|J|=956  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7785
+|J|=95  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7802
+|J|=85  |A|=7810
+|J|=81  |A|=7810
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7936
+|J|=29  |A|=7936
+(flip)  |A|=7938
+|J|=28  |A|=7938
+(flip)  |A|=7938
+
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7941
+|J|=26  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7946
+|J|=22  |A|=7946
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7949
+|J|=20  |A|=7949
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7953
+|J|=18  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7956
+|J|=16  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7960
+|J|=14  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7963
+|J|=12  |A|=7963
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7967
+|J|=10  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7970
+|J|=8  |A|=7970
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7974
+|J|=6  |A|=7974
+(flip)  |A|=7982
+|J|=2  |A|=7982
+(flip)  |A|=7986
+|J|=0  |A|=7986
+Elapsed time is 11.160248 seconds.
+  7986	Total reactions
+  4199	Reversible reactions.
+  3787	Irreversible reactions.
+  7746	Flux consistent reactions, without flipping.
+   240	Flux inconsistent reactions, without flipping.
+  7973	Flux consistent reactions.
+    13	Flux inconsistent reversible reactions left to flip.
+  7974	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7976	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7978	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7980	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7982	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7984	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7986	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7962	Total reactions
+  4170	Reversible reactions.
+  3792	Irreversible reactions.
+  7729	Flux consistent reactions, without flipping.
+   233	Flux inconsistent reactions, without flipping.
+  7945	Flux consistent reactions.
+    17	Flux inconsistent reversible reactions left to flip.
+  7952	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7956	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7958	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7960	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7962	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7883	Total reactions
+  4129	Reversible reactions.
+  3754	Irreversible reactions.
+  7676	Flux consistent reactions, without flipping.
+   207	Flux inconsistent reactions, without flipping.
+  7862	Flux consistent reactions.
+    21	Flux inconsistent reversible reactions left to flip.
+  7866	Flux consistent reactions.
+    17	Flux inconsistent reversible reactions left to flip.
+  7867	Flux consistent reactions.
+    16	Flux inconsistent reversible reactions left to flip.
+  7873	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7875	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7877	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7879	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7881	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7883	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+    10
+
+|J|=2659  |A|=6076
+|J|=927  |A|=7736
+|J|=97  |A|=7736
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7893
+|J|=30  |A|=7896
+|J|=28  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7900
+|J|=26  |A|=7900
+(flip)  |A|=7900
+|A|=7905
+|J|=24  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7909
+|J|=22  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7915
+|J|=18  |A|=7915
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7920
+|J|=16  |A|=7924
+|J|=14  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7931
+|J|=12  |A|=7935
+|J|=10  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7938
+|J|=8  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7942
+|J|=6  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7946
+|J|=4  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7950
+|J|=2  |A|=7954
+|J|=0  |A|=7954
+Elapsed time is 9.328243 seconds.
+  7954	Total reactions
+  4162	Reversible reactions.
+  3792	Irreversible reactions.
+  7717	Flux consistent reactions, without flipping.
+   237	Flux inconsistent reactions, without flipping.
+  7938	Flux consistent reactions.
+    16	Flux inconsistent reversible reactions left to flip.
+  7942	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7944	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7946	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7950	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7952	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7954	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7919	Total reactions
+  4127	Reversible reactions.
+  3792	Irreversible reactions.
+  7653	Flux consistent reactions, without flipping.
+   266	Flux inconsistent reactions, without flipping.
+  7901	Flux consistent reactions.
+    18	Flux inconsistent reversible reactions left to flip.
+  7905	Flux consistent reactions.
+    14	Flux inconsistent reversible reactions left to flip.
+  7907	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7911	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7913	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7915	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7917	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7919	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7860	Total reactions
+  4082	Reversible reactions.
+  3778	Irreversible reactions.
+  7653	Flux consistent reactions, without flipping.
+   207	Flux inconsistent reactions, without flipping.
+  7844	Flux consistent reactions.
+    16	Flux inconsistent reversible reactions left to flip.
+  7846	Flux consistent reactions.
+    14	Flux inconsistent reversible reactions left to flip.
+  7848	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7850	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7852	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7856	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7858	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7860	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+    11
+
+|J|=2684  |A|=6087
+|J|=949  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7775
+|J|=87  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7786
+|J|=82  |A|=7786
+(flip)  |A|=7930
+|J|=27  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7937
+|J|=23  |A|=7937
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7940
+|J|=22  |A|=7940
+(flip)  |A|=7940
+
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7943
+|J|=20  |A|=7948
+|J|=18  |A|=7948
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7953
+|J|=16  |A|=7953
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7958
+|J|=14  |A|=7958
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7962
+|J|=12  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7968
+|J|=10  |A|=7968
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7972
+|J|=8  |A|=7972
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7976
+|J|=6  |A|=7976
+(flip)  |A|=7980
+|J|=4  |A|=7980
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7984
+|J|=2  |A|=7984
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7988
+|J|=0  |A|=7988
+Elapsed time is 11.163638 seconds.
+  7988	Total reactions
+  4198	Reversible reactions.
+  3790	Irreversible reactions.
+  7752	Flux consistent reactions, without flipping.
+   236	Flux inconsistent reactions, without flipping.
+  7971	Flux consistent reactions.
+    17	Flux inconsistent reversible reactions left to flip.
+  7973	Flux consistent reactions.
+    15	Flux inconsistent reversible reactions left to flip.
+  7976	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7980	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7982	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7984	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7986	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7988	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7969	Total reactions
+  4165	Reversible reactions.
+  3804	Irreversible reactions.
+  7749	Flux consistent reactions, without flipping.
+   220	Flux inconsistent reactions, without flipping.
+  7944	Flux consistent reactions.
+    25	Flux inconsistent reversible reactions left to flip.
+  7948	Flux consistent reactions.
+    21	Flux inconsistent reversible reactions left to flip.
+  7951	Flux consistent reactions.
+    18	Flux inconsistent reversible reactions left to flip.
+  7953	Flux consistent reactions.
+    16	Flux inconsistent reversible reactions left to flip.
+  7954	Flux consistent reactions.
+    15	Flux inconsistent reversible reactions left to flip.
+  7956	Flux consistent reactions.
+    13	Flux inconsistent reversible reactions left to flip.
+  7957	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7963	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7965	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7966	Flux consistent reactions.
+     3	Flux inconsistent reversible reactions left to flip.
+  7969	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7872	Total reactions
+  4099	Reversible reactions.
+  3773	Irreversible reactions.
+  7717	Flux consistent reactions, without flipping.
+   155	Flux inconsistent reactions, without flipping.
+  7857	Flux consistent reactions.
+    15	Flux inconsistent reversible reactions left to flip.
+  7860	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7862	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7864	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7868	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7870	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7872	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+    12
+
+|J|=2715  |A|=6130
+|J|=892  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7747
+|J|=92  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7753
+|J|=88  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7756
+|J|=86  |A|=7756
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7889
+|J|=30  |A|=7889
+(flip)  |A|=7889
+|A|=7892
+|J|=28  |A|=7892
+(flip)  |A|=7900
+|J|=24  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7903
+|J|=22  |A|=7903
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7908
+|J|=20  |A|=7911
+|J|=18  |A|=7911
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7918
+|J|=14  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7923
+|J|=12  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7927
+|J|=10  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7929
+|J|=8  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7932
+|J|=6  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7937
+|J|=4  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7941
+|J|=2  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7945
+|J|=0  |A|=7945
+Elapsed time is 10.712269 seconds.
+  7945	Total reactions
+  4138	Reversible reactions.
+  3807	Irreversible reactions.
+  7758	Flux consistent reactions, without flipping.
+   187	Flux inconsistent reactions, without flipping.
+  7929	Flux consistent reactions.
+    16	Flux inconsistent reversible reactions left to flip.
+  7931	Flux consistent reactions.
+    14	Flux inconsistent reversible reactions left to flip.
+  7933	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7935	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7939	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7941	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7943	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7945	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7934	Total reactions
+  4117	Reversible reactions.
+  3817	Irreversible reactions.
+  7743	Flux consistent reactions, without flipping.
+   191	Flux inconsistent reactions, without flipping.
+  7921	Flux consistent reactions.
+    13	Flux inconsistent reversible reactions left to flip.
+  7923	Flux consistent reactions.
+    11	Flux inconsistent reversible reactions left to flip.
+  7927	Flux consistent reactions.
+     7	Flux inconsistent reversible reactions left to flip.
+  7929	Flux consistent reactions.
+     5	Flux inconsistent reversible reactions left to flip.
+  7932	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7934	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7848	Total reactions
+  4063	Reversible reactions.
+  3785	Irreversible reactions.
+  7681	Flux consistent reactions, without flipping.
+   167	Flux inconsistent reactions, without flipping.
+  7832	Flux consistent reactions.
+    16	Flux inconsistent reversible reactions left to flip.
+  7836	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7838	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7840	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7844	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7846	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7848	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+    13
+
+|J|=2687  |A|=6048
+|J|=938  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7735
+|J|=98  |A|=7735
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7902
+|J|=36  |A|=7902
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7913
+|J|=32  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7916
+|J|=30  |A|=7916
+(flip)  |A|=7916
+
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7919
+|J|=28  |A|=7919
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7922
+|J|=26  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7927
+|J|=24  |A|=7927
+(flip)  |A|=7931
+|J|=22  |A|=7936
+|J|=20  |A|=7936
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7940
+|J|=18  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7945
+|J|=16  |A|=7945
+(flip)  |A|=7951
+|J|=14  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7956
+|J|=12  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7959
+|J|=10  |A|=7959
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7963
+|J|=8  |A|=7963
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7967
+|J|=6  |A|=7967
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7971
+|J|=4  |A|=7971
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7974
+|J|=2  |A|=7974
+(flip)  |A|=7978
+|J|=0  |A|=7978
+Elapsed time is 13.069145 seconds.
+  7978	Total reactions
+  4154	Reversible reactions.
+  3824	Irreversible reactions.
+  7705	Flux consistent reactions, without flipping.
+   273	Flux inconsistent reactions, without flipping.
+  7970	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7972	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7974	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7976	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7978	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7955	Total reactions
+  4117	Reversible reactions.
+  3838	Irreversible reactions.
+  7709	Flux consistent reactions, without flipping.
+   246	Flux inconsistent reactions, without flipping.
+  7943	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7945	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7947	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7949	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7951	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7953	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7955	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7874	Total reactions
+  4074	Reversible reactions.
+  3800	Irreversible reactions.
+  7657	Flux consistent reactions, without flipping.
+   217	Flux inconsistent reactions, without flipping.
+  7864	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7866	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7870	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7872	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7874	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+    14
+
+|J|=2662  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=6008
+|J|=980  |A|=7781
+|J|=96  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7797
+|J|=89  |A|=7797
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7938
+|J|=36  |A|=7941
+|J|=34  |A|=7941
+(flip)  |A|=7941
+
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7946
+|J|=30  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7951
+|J|=28  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7954
+|J|=26  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7960
+|J|=24  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7964
+|J|=22  |A|=7964
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7967
+|J|=20  |A|=7967
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7971
+|J|=18  |A|=7971
+(flip)  |A|=7975
+|J|=16  |A|=7978
+|J|=14  |A|=7978
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7985
+|J|=12  |A|=7985
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7989
+|J|=10  |A|=7992
+|J|=8  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7997
+|J|=6  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8001
+|J|=4  |A|=8005
+|J|=2  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8010
+|J|=0  |A|=8010
+Elapsed time is 12.896704 seconds.
+  8010	Total reactions
+  4191	Reversible reactions.
+  3819	Irreversible reactions.
+  7780	Flux consistent reactions, without flipping.
+   230	Flux inconsistent reactions, without flipping.
+  8000	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  8002	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  8004	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  8006	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  8010	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7988	Total reactions
+  4146	Reversible reactions.
+  3842	Irreversible reactions.
+  7764	Flux consistent reactions, without flipping.
+   224	Flux inconsistent reactions, without flipping.
+  7970	Flux consistent reactions.
+    18	Flux inconsistent reversible reactions left to flip.
+  7972	Flux consistent reactions.
+    16	Flux inconsistent reversible reactions left to flip.
+  7974	Flux consistent reactions.
+    14	Flux inconsistent reversible reactions left to flip.
+  7976	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7978	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7980	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7982	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7984	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7986	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7988	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7926	Total reactions
+  4128	Reversible reactions.
+  3798	Irreversible reactions.
+  7720	Flux consistent reactions, without flipping.
+   206	Flux inconsistent reactions, without flipping.
+  7908	Flux consistent reactions.
+    18	Flux inconsistent reversible reactions left to flip.
+  7910	Flux consistent reactions.
+    16	Flux inconsistent reversible reactions left to flip.
+  7916	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7918	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7920	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7922	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7924	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7926	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+    15
+
+|J|=2693  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=6025
+|J|=973  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7744
+|J|=97  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7751
+|J|=92  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7754
+|J|=90  |A|=7756
+|J|=89  |A|=7756
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7917
+|J|=25  |A|=7917
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7925
+|J|=22  |A|=7925
+(flip)  |A|=7925
+|A|=7925
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7929
+|J|=20  |A|=7929
+(flip)  |A|=7933
+|J|=18  |A|=7933
+(flip)  |A|=7937
+|J|=16  |A|=7937
+(flip)  |A|=7942
+|J|=14  |A|=7942
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7945
+|J|=12  |A|=7945
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7950
+|J|=10  |A|=7955
+|J|=8  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7958
+|J|=6  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7961
+|J|=4  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7963
+|J|=2  |A|=7963
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7967
+|J|=0  |A|=7967
+Elapsed time is 11.489005 seconds.
+  7967	Total reactions
+  4142	Reversible reactions.
+  3825	Irreversible reactions.
+  7740	Flux consistent reactions, without flipping.
+   227	Flux inconsistent reactions, without flipping.
+  7952	Flux consistent reactions.
+    15	Flux inconsistent reversible reactions left to flip.
+  7955	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7959	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7961	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7963	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7965	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7967	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7938	Total reactions
+  4097	Reversible reactions.
+  3841	Irreversible reactions.
+  7729	Flux consistent reactions, without flipping.
+   209	Flux inconsistent reactions, without flipping.
+  7917	Flux consistent reactions.
+    21	Flux inconsistent reversible reactions left to flip.
+  7919	Flux consistent reactions.
+    19	Flux inconsistent reversible reactions left to flip.
+  7921	Flux consistent reactions.
+    17	Flux inconsistent reversible reactions left to flip.
+  7924	Flux consistent reactions.
+    14	Flux inconsistent reversible reactions left to flip.
+  7926	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7928	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7930	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7932	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7934	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7936	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7938	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7859	Total reactions
+  4085	Reversible reactions.
+  3774	Irreversible reactions.
+  7658	Flux consistent reactions, without flipping.
+   201	Flux inconsistent reactions, without flipping.
+  7844	Flux consistent reactions.
+    15	Flux inconsistent reversible reactions left to flip.
+  7847	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7849	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7851	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7853	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7855	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7857	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7859	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+    16
+
+|J|=2695  |A|=6112
+|J|=944  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7827
+|J|=81  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7833
+|J|=78  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7839
+|J|=74  |A|=7847
+|J|=70  |A|=7847
+(flip)  |A|=7939
+|J|=34  |A|=7939
+(flip)  |A|=7939
+
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7943
+|J|=32  |A|=7943
+(flip)  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7946
+|J|=30  |A|=7951
+|J|=28  |A|=7951
+(flip)  |A|=7956
+|J|=26  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7961
+|J|=24  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7967
+|J|=20  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7971
+|J|=18  |A|=7971
+(flip)  |A|=7976
+|J|=16  |A|=7979
+|J|=14  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7983
+|J|=12  |A|=7983
+(flip)  |A|=7986
+|J|=10  |A|=7989
+|J|=8  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7994
+|J|=6  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=7998
+|J|=4  |A|=8003
+|J|=2  
+3 = sol.stat
+5 = sol.origStat
+Warning: LP solution may not be optimal 
+|A|=8007
+|J|=0  |A|=8007
+Elapsed time is 12.639529 seconds.
+  8007	Total reactions
+  4163	Reversible reactions.
+  3844	Irreversible reactions.
+  7773	Flux consistent reactions, without flipping.
+   234	Flux inconsistent reactions, without flipping.
+  7999	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  8001	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  8003	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  8005	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  8007	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7994	Total reactions
+  4123	Reversible reactions.
+  3871	Irreversible reactions.
+  7732	Flux consistent reactions, without flipping.
+   262	Flux inconsistent reactions, without flipping.
+  7969	Flux consistent reactions.
+    25	Flux inconsistent reversible reactions left to flip.
+  7971	Flux consistent reactions.
+    23	Flux inconsistent reversible reactions left to flip.
+  7973	Flux consistent reactions.
+    21	Flux inconsistent reversible reactions left to flip.
+  7975	Flux consistent reactions.
+    19	Flux inconsistent reversible reactions left to flip.
+  7976	Flux consistent reactions.
+    18	Flux inconsistent reversible reactions left to flip.
+  7978	Flux consistent reactions.
+    16	Flux inconsistent reversible reactions left to flip.
+  7982	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7984	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7988	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7990	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7992	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7994	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+  7933	Total reactions
+  4106	Reversible reactions.
+  3827	Irreversible reactions.
+  7733	Flux consistent reactions, without flipping.
+   200	Flux inconsistent reactions, without flipping.
+  7918	Flux consistent reactions.
+    15	Flux inconsistent reversible reactions left to flip.
+  7921	Flux consistent reactions.
+    12	Flux inconsistent reversible reactions left to flip.
+  7923	Flux consistent reactions.
+    10	Flux inconsistent reversible reactions left to flip.
+  7925	Flux consistent reactions.
+     8	Flux inconsistent reversible reactions left to flip.
+  7927	Flux consistent reactions.
+     6	Flux inconsistent reversible reactions left to flip.
+  7929	Flux consistent reactions.
+     4	Flux inconsistent reversible reactions left to flip.
+  7931	Flux consistent reactions.
+     2	Flux inconsistent reversible reactions left to flip.
+  7933	Flux consistent reactions.
+     0	Flux inconsistent reversible reactions left to flip.
+fastcc.m: The input model is entirely flux consistent.\n
+</pre><img vspace="5" hspace="5" src="weightedTest_01.png" alt=""> <img vspace="5" hspace="5" src="weightedTest_02.png" alt=""> <img vspace="5" hspace="5" src="weightedTest_03.png" alt=""> <p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2019a</a><br></p></div><!--
 ##### SOURCE BEGIN #####
 clear all; close all; clc;
 % importing the metabolic network model
@@ -1705,9 +2476,9 @@ for k = 1:l
     % randomly sampling the set of core reactions
     core = randsample(n, n/2);
     % FASTCORE
-    tic;
+    time1 = tic;
     coreRxn = fastCoreWeighted(core, model, weights(k)*ones(n, 1), 1e-4);
-    runtime(1, k) = toc;
+    runtime(1, k) = toc(time1);
     coreRxnBool = false(n, 1);
     coreRxnBool(coreRxn) = true;
     performance(1, k) = sum(coreRxnBool);
@@ -1720,15 +2491,15 @@ for k = 1:l
         tempmodel.rxns = model.rxns(coreRxnBool);
         tempmodel.c = model.c(coreRxnBool);
         tempmodel.mets = model.mets;
-        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        A = fastcc(tempmodel, 1e-4);
         if all(A.' == 1:length(A))
             errors(1, k) = false;
         end
     end
     % SWIFTCORE w/o reduction
-    tic;
-    [coreInd, numLP] = swiftcore(model.S, model.rev, core, weights(k)*ones(n, 1), false, solver);
-    runtime(2, k) = toc;
+    time2 = tic;
+    [~, coreInd, numLP] = swiftcore(model, core, weights(k)*ones(n, 1), 1e-10, false, solver);
+    runtime(2, k) = toc(time2);
     LP(1, k) = numLP;
     performance(2, k) = sum(coreInd);
     % consistency checking
@@ -1740,15 +2511,15 @@ for k = 1:l
         tempmodel.rxns = model.rxns(coreInd);
         tempmodel.c = model.c(coreInd);
         tempmodel.mets = model.mets;
-        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        A = fastcc(tempmodel, 1e-4);
         if all(A.' == 1:length(A))
             errors(2, k) = false;
         end
     end
     % SWIFTCORE w/ reduction
-    tic;
-    [coreIndReduce, numLP] = swiftcore(model.S, model.rev, core, weights(k)*ones(n, 1), true, solver);
-    runtime(3, k) = toc;
+    time3 = tic;
+    [~, coreIndReduce, numLP] = swiftcore(model, core, weights(k)*ones(n, 1), 1e-10, true, solver);
+    runtime(3, k) = toc(time3);
     LP(2, k) = numLP;
     performance(3, k) = sum(coreIndReduce);
     % consistency checking
@@ -1760,7 +2531,7 @@ for k = 1:l
         tempmodel.rxns = model.rxns(coreIndReduce);
         tempmodel.c = model.c(coreIndReduce);
         tempmodel.mets = model.mets;
-        A = swiftcc(tempmodel.S, tempmodel.rev, solver);
+        A = fastcc(tempmodel, 1e-4);
         if all(A.' == 1:length(A))
             errors(3, k) = false;
         end

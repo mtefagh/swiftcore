@@ -11,14 +11,14 @@ ub = model.ub;
 c = model.c;
 rxns = model.rxns;
 solver = 'cplex';
-runtimecc = zeros(4, 29);
-errors = false(2, 29);
+runtimecc = zeros(4, 467);
+errors = false(2, 467);
 unknown_error = false;
-for k = 1:29
+for k = 1:467
     error = false;
     disp(k);
     % randomly selecting a sample subnetwork of the given size
-    core = randsample(length(rxns), 467*k);
+    core = randsample(length(rxns), 29*k);
     model.S = S(:, core);
     model.rev = rev(core);
     model.lb = lb(core);
@@ -72,8 +72,8 @@ fprintf('FASTCC returns wrong answers in %d%% of cases!\n', round(100*sum(errors
 fprintf('SWIFTCC returns wrong answers in %d%% of cases!\n', round(100*sum(errors(2,:))/size(errors,2)));
 % drawing scatterplots for the comparison of runtimes
 figure();
-plot(467*(1:29),runtimecc(1,:),'o',467*(1:29),runtimecc(2,:),'*',467*(1:29), ...
-    runtimecc(3,:),'+',467*(1:29),runtimecc(4,:),'x');
+plot(29*(1:467),runtimecc(1,:),'o',29*(1:467),runtimecc(2,:),'*',29*(1:467), ...
+    runtimecc(3,:),'+',29*(1:467),runtimecc(4,:),'x');
 legend({'FASTCC','SWIFTCC','FASTCC++','SWIFTCC++'},'Location','northwest');
 xlabel('number of core reactions');
 ylabel('runtime in seconds');

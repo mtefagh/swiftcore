@@ -37,7 +37,7 @@ function flux = core(model, blocked, weights, solver)
     temp2 = speye(k+l);
     problem.A = [S, sparse(m,k+l); ...
         temp1(weights~=0 & rev==1, :), temp2(rev(weights~=0)==1, :); ...
-        -temp1(weights~=0,:), temp2];
+        -temp1(weights~=0, :), temp2];
     problem.sense = repmat('=', m+2*k+l, 1);
     problem.sense(m+1:m+2*k+l) = '>';
     problem.rhs = zeros(m+2*k+l, 1);
