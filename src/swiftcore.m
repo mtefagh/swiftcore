@@ -9,7 +9,7 @@ function [reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, tol
 %    model:        the metabolic network with fields:
 %                    * .S - the associated sparse stoichiometric matrix
 %                    * .lb - lower bounds on reaction rates
-%                    * .ub - lower bounds on reaction rates
+%                    * .ub - upper bounds on reaction rates
 %                    * .rxns - the cell array of reaction abbreviations
 %                    * .mets - the cell array of metabolite abbreviations
 %    coreInd:      the set of indices corresponding to the core reactions
