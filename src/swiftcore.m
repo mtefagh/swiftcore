@@ -3,7 +3,7 @@ function [reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, tol
 %
 % USAGE:
 %
-%    [reconstruction, LP] = swiftcore(S, rev, coreInd, weights, tol, reduction [, solver])
+%    [reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, tol, reduction [, solver])
 %
 % INPUTS:
 %    model:        the metabolic network with fields:
