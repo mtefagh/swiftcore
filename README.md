@@ -42,5 +42,8 @@
 2. `reconInd`: the 0-1 **indicator vector** of the reactions constituting the reconstruction
 3. `LP`: the number of **solved LPs**
 
+# Requirements
+To run the test files in the `test` folder, one needs to download the [FASTCORE](http://wwwen.uni.lu/recherche/fstc/life_sciences_research_unit/research_areas/systems_biology/software) package and the [Recon3D](https://www.vmh.life/files/reconstructions/Recon/3D.01/Recon3D_301.zip) model and add them to the Matlab path.
+
 # License
 The *swift* family is distributed under the [GNU General Public License v3.0](http://www.gnu.org/copyleft/gpl.html).
