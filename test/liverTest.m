@@ -1,13 +1,19 @@
 clear all; close all; clc;
 % importing the metabolic network model
-load('consistRecon1.mat');
+load('Recon3D_301/Recon3DModel_301.mat');
+model = Recon3DModel;
+model.rev = double(model.lb < 0);
+clear Recon3DModel;
 n = length(model.rxns);
+% setting up the LP solver to Gurobi
 solver = 'gurobi';
 changeCobraSolver(solver);
+% generating a task structure from a sheet containing the list of tasks
+taskStruct = generateTaskStructure('liverTests.xlsx');
 % extracting the set of core reactions
 core = load('C_liver.mat').C;
 % setting the number of iterations
-iterations = 10;
+iterations = 100;
 LP = zeros(2, iterations);
 runtime = zeros(3, iterations);
 performance = zeros(4, iterations);
@@ -38,7 +44,7 @@ for k = 1:iterations
         if all(A.' == 1:length(A))
             errors(1, k) = false;
         end
-        taskReport = checkMetabolicTasks(tempmodel, 'liverTests.xlsx');
+        taskReport = checkMetabolicTasks(tempmodel, 'liverTests.xlsx', true, false, false, taskStruct);
         taskReport = split(taskReport(211, 3), '/');
         finalScore(1, k) = str2double(taskReport(1));
     end
@@ -64,7 +70,7 @@ for k = 1:iterations
         if all(A.' == 1:length(A))
             errors(2, k) = false;
         end
-        taskReport = checkMetabolicTasks(tempmodel, 'liverTests.xlsx');
+        taskReport = checkMetabolicTasks(tempmodel, 'liverTests.xlsx', true, false, false, taskStruct);
         taskReport = split(taskReport(211, 3), '/');
         finalScore(2, k) = str2double(taskReport(1));
     end
@@ -90,7 +96,7 @@ for k = 1:iterations
         if all(A.' == 1:length(A))
             errors(3, k) = false;
         end
-        taskReport = checkMetabolicTasks(tempmodel, 'liverTests.xlsx');
+        taskReport = checkMetabolicTasks(tempmodel, 'liverTests.xlsx', true, false, false, taskStruct);
         taskReport = split(taskReport(211, 3), '/');
         finalScore(3, k) = str2double(taskReport(1));
     end
@@ -130,10 +136,14 @@ xlabel('iteration');
 ylabel('size of the subnetwork');
 savefig('performanceLiver');
 % comparing the improvement percentage of the runtime
-fprintf('switftcore w/o reduction was computed in %d%% of fastcore runtime.\n', round(mean(runtime(2, :)./runtime(1, :))*100));
-fprintf('switftcore w/ reduction was computed in %d%% of fastcore runtime.\n', round(mean(runtime(3, :)./runtime(1, :))*100));
+fprintf('SWIFTCORE w/o reduction was computed in %d%% of FASTCORE runtime.\n', round(mean(runtime(2, :)./runtime(1, :))*100));
+fprintf('SWIFTCORE w/ reduction was computed in %d%% of FASTCORE runtime.\n', round(mean(runtime(3, :)./runtime(1, :))*100));
 % comparing the improvement percentage of the sparsity
-fprintf('switftcore w/o reduction performed with %d%% of fastcore reactions.\n', round(mean(performance(2, :)./performance(1, :))*100));
-fprintf('switftcore w/ reduction performed with %d%% of fastcore reactions.\n', round(mean(performance(3, :)./performance(1, :))*100));
+fprintf('SWIFTCORE w/o reduction performed with %d%% of FASTCORE reactions.\n', round(mean(performance(2, :)./performance(1, :))*100));
+fprintf('SWIFTCORE w/ reduction performed with %d%% of FASTCORE reactions.\n', round(mean(performance(3, :)./performance(1, :))*100));
 fprintf('The average number of reactions in the intersection is %d%% of fastcore reactions.\n', ...
     round(mean(performance(4, :)./performance(1, :))*100));
+% comparing the improvement in performing the tasks
+fprintf('FASTCORE passed %f tasks on average.\n', mean(finalScore(1, :)));
+fprintf('SWIFTCORE w/o reduction passed %f tasks on average.\n', mean(finalScore(2, :)));
+fprintf('SWIFTCORE w/ reduction passed %f tasks on average.\n', mean(finalScore(3, :)));
