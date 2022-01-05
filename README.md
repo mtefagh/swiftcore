@@ -17,7 +17,10 @@
 ***
 
 # swiftcore
-[swiftcore](https://github.com/mtefagh/swiftcore/blob/master/src/swiftcore.m) is a tool for the context-specific reconstruction of genome-scale metabolic networks. [swiftcoreTest](https://github.com/mtefagh/swiftcore/blob/master/test/swiftcoreTest.m) and [weightedTest](https://github.com/mtefagh/swiftcore/blob/master/test/weightedTest.m) provide a benchmark to compare its performance against [fastcore](https://wwwen.uni.lu/research/fstc/life_sciences_research_unit/research_areas/systems_biology/software).
+
+## Introduction
+[swiftcore](https://github.com/mtefagh/swiftcore/blob/master/src/swiftcore.m) is a tool for the context-specific reconstruction of genome-scale metabolic networks. [swiftcoreTest](https://github.com/mtefagh/swiftcore/blob/master/test/swiftcoreTest.m) and [weightedTest](https://github.com/mtefagh/swiftcore/blob/master/test/weightedTest.m) provide a benchmark to compare its performance against [fastcore](https://wwwen.uni.lu/research/fstc/life_sciences_research_unit/research_areas/systems_biology/software). When referencing QFCA, please cite the following:
+- Tefagh, M., & Boyd, S. P. (2020). SWIFTCORE: a tool for the context-specific reconstruction of genome-scale metabolic networks. BMC bioinformatics, 21(1), 1-14. [https://doi.org/10.1186/s12859-020-3440-y](https://doi.org/10.1186/s12859-020-3440-y)
 
 ## Usage
 ### `[reconstruction, reconInd, LP] = swiftcore(model, coreInd, weights, tol, reduction [, solver])`
