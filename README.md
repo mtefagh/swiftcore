@@ -2,7 +2,7 @@
 
 ## Introduction
 [swiftcc](https://github.com/mtefagh/swiftcore/blob/master/src/swiftcc.m) is a tool for finding the largest flux consistent subnetwork of the original metabolic network. [swiftccTest](https://github.com/mtefagh/swiftcore/blob/master/test/swiftccTest.m) provides a benchmark to compare its performance against [fastcc](https://wwwen.uni.lu/research/fstc/life_sciences_research_unit/research_areas/systems_biology/software). When referencing SWIFTCC, please cite the following:
-- Tefagh, M., & Boyd, S. P. (2020). SWIFTCORE: a tool for the context-specific reconstruction of genome-scale metabolic networks. BMC bioinformatics, 21(1), 1-14. [https://doi.org/10.1186/s12859-020-3440-y](https://doi.org/10.1186/s12859-020-3440-y)
+- Tefagh, M., & Boyd, S. P. (2020). SWIFTCORE: a tool for the context-specific reconstruction of genome-scale metabolic networks. BMC Bioinformatics, 21(1), 1-14. [https://doi.org/10.1186/s12859-020-3440-y](https://doi.org/10.1186/s12859-020-3440-y)
 
 ## Usage
 ### `consistent = swiftcc(S, rev [, solver])`
